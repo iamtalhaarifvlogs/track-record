@@ -585,4 +585,72 @@ export default function Page() {
     notePage,
   ]);
 
-  const totalTaskPages = Math.max(1, Math.ceil(tasks.length
+  const totalTaskPages = Math.max(1, Math.ceil(tasks.length / itemsPerPage));
+  const totalProjectPages = Math.max(
+    1,
+    Math.ceil(projects.length / itemsPerPage)
+  );
+  const totalClientPages = Math.max(1, Math.ceil(clients.length / itemsPerPage));
+  const totalNotePages = Math.max(1, Math.ceil(notes.length / itemsPerPage));
+
+  return (
+    <>
+      <Header />
+
+      <main className="p-6">
+        <div className="flex justify-between items-center mb-6">
+          <h1 className="text-2xl font-bold">Dashboard</h1>
+          <button
+            onClick={openAddModal}
+            className="px-6 py-2 bg-cyan-900 text-white rounded-xl font-semibold shadow hover:bg-cyan-800 transition"
+          >
+            Add Entry
+          </button>
+        </div>
+
+        {/* Example: display tasks */}
+        <section className="mb-10">
+          <h2 className="text-xl font-bold mb-4">Tasks</h2>
+          {paginatedTasks.map((task) => (
+            <div
+              key={task.id}
+              className="p-4 mb-3 border rounded-xl shadow hover:shadow-md transition cursor-pointer"
+            >
+              <div className="flex justify-between items-center">
+                <h3 className="font-bold">{task.title}</h3>
+                <StatusBadge status={task.status} />
+              </div>
+              <p className="text-sm text-gray-600">{task.details}</p>
+            </div>
+          ))}
+
+          <Pagination
+            currentPage={taskPage}
+            totalPages={totalTaskPages}
+            onPrev={() => setTaskPage((p) => Math.max(1, p - 1))}
+            onNext={() => setTaskPage((p) => Math.min(totalTaskPages, p + 1))}
+          />
+        </section>
+
+        {/* Add similar sections for Projects, Clients, Notes */}
+
+        <Modal
+          open={modalOpen}
+          title={
+            modalMode === "add"
+              ? "Add Entry"
+              : modalMode === "edit"
+              ? "Edit Entry"
+              : "Details"
+          }
+          onClose={() => setModalOpen(false)}
+        >
+          {/* Modal content will go here */}
+          <div>Form or details for {selectedType}</div>
+        </Modal>
+      </main>
+
+      <Footer />
+    </>
+  );
+}
