@@ -261,10 +261,8 @@ export default function Page() {
     setFormStatus("Pending");
     setFormPriority("Medium");
     setFormDeadline("");
-
     setFormClientName("");
     setFormClientCountry("");
-
     setFormSelectedClientId("");
     setFormSelectedProjectId("");
   }
@@ -298,26 +296,20 @@ export default function Page() {
       setFormPriority(item.priority);
       setFormDeadline(item.deadline || "");
       setFormSelectedProjectId(item.projectId);
-    }
-
-    if (item.type === "Project") {
+    } else if (item.type === "Project") {
       setFormTitle(item.title);
       setFormDetails(item.details);
       setFormStatus(item.status);
       setFormPriority(item.priority);
       setFormDeadline(item.deadline || "");
       setFormSelectedClientId(item.clientId);
-    }
-
-    if (item.type === "Client") {
+    } else if (item.type === "Client") {
       setFormClientName(item.name);
       setFormClientCountry(item.country);
       setFormDetails(item.details);
       setFormStatus(item.status);
       setFormDeadline(item.deadline || "");
-    }
-
-    if (item.type === "Note") {
+    } else if (item.type === "Note") {
       setFormTitle(item.title);
       setFormDetails(item.details);
     }
@@ -355,7 +347,7 @@ export default function Page() {
   }
 
   function handleSave() {
-    // ADD
+    // ADD MODE
     if (modalMode === "add") {
       if (selectedType === "Client") {
         if (!formClientName.trim()) return alert("Client name is required.");
@@ -374,9 +366,7 @@ export default function Page() {
         };
 
         setClients((prev) => [newClient, ...prev]);
-      }
-
-      if (selectedType === "Project") {
+      } else if (selectedType === "Project") {
         if (!formTitle.trim()) return alert("Project title is required.");
         if (!formDetails.trim()) return alert("Details are required.");
         if (!formSelectedClientId.trim())
@@ -399,9 +389,7 @@ export default function Page() {
         };
 
         setProjects((prev) => [newProject, ...prev]);
-      }
-
-      if (selectedType === "Task") {
+      } else if (selectedType === "Task") {
         if (!formTitle.trim()) return alert("Task title is required.");
         if (!formDetails.trim()) return alert("Details are required.");
         if (!formSelectedProjectId.trim())
@@ -424,9 +412,7 @@ export default function Page() {
         };
 
         setTasks((prev) => [newTask, ...prev]);
-      }
-
-      if (selectedType === "Note") {
+      } else if (selectedType === "Note") {
         if (!formTitle.trim()) return alert("Note title is required.");
         if (!formDetails.trim()) return alert("Details are required.");
 
@@ -440,9 +426,13 @@ export default function Page() {
 
         setNotes((prev) => [newNote, ...prev]);
       }
+
+      setModalOpen(false);
+      resetForm();
+      return;
     }
 
-    // EDIT
+    // EDIT MODE
     if (modalMode === "edit" && selectedItem) {
       if (selectedItem.type === "Client") {
         if (!formClientName.trim()) return alert("Client name is required.");
@@ -467,9 +457,7 @@ export default function Page() {
             p.clientId === updated.id ? { ...p, clientName: updated.name } : p
           )
         );
-      }
-
-      if (selectedItem.type === "Project") {
+      } else if (selectedItem.type === "Project") {
         if (!formTitle.trim()) return alert("Project title is required.");
         if (!formDetails.trim()) return alert("Details are required.");
         if (!formSelectedClientId.trim())
@@ -500,9 +488,7 @@ export default function Page() {
               : t
           )
         );
-      }
-
-      if (selectedItem.type === "Task") {
+      } else if (selectedItem.type === "Task") {
         if (!formTitle.trim()) return alert("Task title is required.");
         if (!formDetails.trim()) return alert("Details are required.");
         if (!formSelectedProjectId.trim())
@@ -525,9 +511,7 @@ export default function Page() {
         setTasks((prev) =>
           prev.map((x) => (x.id === updated.id ? updated : x))
         );
-      }
-
-      if (selectedItem.type === "Note") {
+      } else if (selectedItem.type === "Note") {
         if (!formTitle.trim()) return alert("Note title is required.");
         if (!formDetails.trim()) return alert("Details are required.");
 
@@ -541,10 +525,11 @@ export default function Page() {
           prev.map((x) => (x.id === updated.id ? updated : x))
         );
       }
-    }
 
-    setModalOpen(false);
-    resetForm();
+      setModalOpen(false);
+      resetForm();
+      return;
+    }
   }
 
   function paginate<T>(items: T[], page: number) {
@@ -552,32 +537,14 @@ export default function Page() {
     return items.slice(start, start + itemsPerPage);
   }
 
-  const paginatedTasks = useMemo(
-    () => paginate(tasks, taskPage),
-    [tasks, taskPage]
-  );
-  const paginatedProjects = useMemo(
-    () => paginate(projects, projectPage),
-    [projects, projectPage]
-  );
-  const paginatedClients = useMemo(
-    () => paginate(clients, clientPage),
-    [clients, clientPage]
-  );
-  const paginatedNotes = useMemo(
-    () => paginate(notes, notePage),
-    [notes, notePage]
-  );
+  const paginatedTasks = useMemo(() => paginate(tasks, taskPage), [tasks, taskPage]);
+  const paginatedProjects = useMemo(() => paginate(projects, projectPage), [projects, projectPage]);
+  const paginatedClients = useMemo(() => paginate(clients, clientPage), [clients, clientPage]);
+  const paginatedNotes = useMemo(() => paginate(notes, notePage), [notes, notePage]);
 
   const totalTaskPages = Math.max(1, Math.ceil(tasks.length / itemsPerPage));
-  const totalProjectPages = Math.max(
-    1,
-    Math.ceil(projects.length / itemsPerPage)
-  );
-  const totalClientPages = Math.max(
-    1,
-    Math.ceil(clients.length / itemsPerPage)
-  );
+  const totalProjectPages = Math.max(1, Math.ceil(projects.length / itemsPerPage));
+  const totalClientPages = Math.max(1, Math.ceil(clients.length / itemsPerPage));
   const totalNotePages = Math.max(1, Math.ceil(notes.length / itemsPerPage));
 
   return (
@@ -634,10 +601,7 @@ export default function Page() {
                 <tbody>
                   {paginatedTasks.length === 0 ? (
                     <tr>
-                      <td
-                        colSpan={6}
-                        className="px-6 py-8 text-center text-gray-500"
-                      >
+                      <td colSpan={6} className="px-6 py-8 text-center text-gray-500">
                         No tasks yet. Add your first task.
                       </td>
                     </tr>
@@ -691,14 +655,12 @@ export default function Page() {
             </div>
 
             {totalTaskPages > 1 && (
-              <div className="p-6 border-t">
+              <div className="px-6 pb-6">
                 <Pagination
                   currentPage={taskPage}
                   totalPages={totalTaskPages}
-                  onNext={() =>
-                    setTaskPage((p) => Math.min(p + 1, totalTaskPages))
-                  }
-                  onPrev={() => setTaskPage((p) => Math.max(p - 1, 1))}
+                  onPrev={() => setTaskPage((p) => Math.max(1, p - 1))}
+                  onNext={() => setTaskPage((p) => Math.min(totalTaskPages, p + 1))}
                 />
               </div>
             )}
@@ -731,19 +693,13 @@ export default function Page() {
                 <tbody>
                   {paginatedProjects.length === 0 ? (
                     <tr>
-                      <td
-                        colSpan={6}
-                        className="px-6 py-8 text-center text-gray-500"
-                      >
-                        No projects yet.
+                      <td colSpan={6} className="px-6 py-8 text-center text-gray-500">
+                        No projects yet. Add your first project.
                       </td>
                     </tr>
                   ) : (
                     paginatedProjects.map((project) => (
-                      <tr
-                        key={project.id}
-                        className="border-t hover:bg-gray-50"
-                      >
+                      <tr key={project.id} className="border-t hover:bg-gray-50">
                         <td className="px-6 py-5 font-semibold text-black">
                           {project.title}
                         </td>
@@ -791,14 +747,14 @@ export default function Page() {
             </div>
 
             {totalProjectPages > 1 && (
-              <div className="p-6 border-t">
+              <div className="px-6 pb-6">
                 <Pagination
                   currentPage={projectPage}
                   totalPages={totalProjectPages}
+                  onPrev={() => setProjectPage((p) => Math.max(1, p - 1))}
                   onNext={() =>
-                    setProjectPage((p) => Math.min(p + 1, totalProjectPages))
+                    setProjectPage((p) => Math.min(totalProjectPages, p + 1))
                   }
-                  onPrev={() => setProjectPage((p) => Math.max(p - 1, 1))}
                 />
               </div>
             )}
@@ -819,7 +775,7 @@ export default function Page() {
               <table className="w-full text-left">
                 <thead className="bg-gray-100 text-gray-700 text-sm">
                   <tr>
-                    <th className="px-6 py-4 font-bold">Client Name</th>
+                    <th className="px-6 py-4 font-bold">Client</th>
                     <th className="px-6 py-4 font-bold">Country</th>
                     <th className="px-6 py-4 font-bold">Status</th>
                     <th className="px-6 py-4 font-bold">Start Date</th>
@@ -830,11 +786,8 @@ export default function Page() {
                 <tbody>
                   {paginatedClients.length === 0 ? (
                     <tr>
-                      <td
-                        colSpan={5}
-                        className="px-6 py-8 text-center text-gray-500"
-                      >
-                        No clients yet.
+                      <td colSpan={5} className="px-6 py-8 text-center text-gray-500">
+                        No clients yet. Add your first client.
                       </td>
                     </tr>
                   ) : (
@@ -883,14 +836,14 @@ export default function Page() {
             </div>
 
             {totalClientPages > 1 && (
-              <div className="p-6 border-t">
+              <div className="px-6 pb-6">
                 <Pagination
                   currentPage={clientPage}
                   totalPages={totalClientPages}
+                  onPrev={() => setClientPage((p) => Math.max(1, p - 1))}
                   onNext={() =>
-                    setClientPage((p) => Math.min(p + 1, totalClientPages))
+                    setClientPage((p) => Math.min(totalClientPages, p + 1))
                   }
-                  onPrev={() => setClientPage((p) => Math.max(p - 1, 1))}
                 />
               </div>
             )}
@@ -911,7 +864,7 @@ export default function Page() {
               <table className="w-full text-left">
                 <thead className="bg-gray-100 text-gray-700 text-sm">
                   <tr>
-                    <th className="px-6 py-4 font-bold">Note Title</th>
+                    <th className="px-6 py-4 font-bold">Note</th>
                     <th className="px-6 py-4 font-bold">Created</th>
                     <th className="px-6 py-4 font-bold text-right">Actions</th>
                   </tr>
@@ -920,11 +873,8 @@ export default function Page() {
                 <tbody>
                   {paginatedNotes.length === 0 ? (
                     <tr>
-                      <td
-                        colSpan={3}
-                        className="px-6 py-8 text-center text-gray-500"
-                      >
-                        No notes yet.
+                      <td colSpan={3} className="px-6 py-8 text-center text-gray-500">
+                        No notes yet. Add your first note.
                       </td>
                     </tr>
                   ) : (
@@ -934,7 +884,7 @@ export default function Page() {
                           {note.title}
                         </td>
 
-                        <td className="px-6 py-5 text-black">
+                        <td className="px-6 py-5 text-black font-medium">
                           {note.createdAt}
                         </td>
 
@@ -965,21 +915,19 @@ export default function Page() {
             </div>
 
             {totalNotePages > 1 && (
-              <div className="p-6 border-t">
+              <div className="px-6 pb-6">
                 <Pagination
                   currentPage={notePage}
                   totalPages={totalNotePages}
-                  onNext={() =>
-                    setNotePage((p) => Math.min(p + 1, totalNotePages))
-                  }
-                  onPrev={() => setNotePage((p) => Math.max(p - 1, 1))}
+                  onPrev={() => setNotePage((p) => Math.max(1, p - 1))}
+                  onNext={() => setNotePage((p) => Math.min(totalNotePages, p + 1))}
                 />
               </div>
             )}
           </div>
         </section>
 
-        {/* ADD / EDIT / DETAILS MODAL */}
+        {/* MODAL */}
         <Modal
           open={modalOpen}
           title={
@@ -987,84 +935,73 @@ export default function Page() {
               ? `${selectedType} Details`
               : modalMode === "edit"
               ? `Edit ${selectedType}`
-              : `Add New ${selectedType}`
+              : `Add New Entry`
           }
           onClose={() => {
             setModalOpen(false);
             resetForm();
           }}
         >
-          {modalMode === "details" && selectedItem ? (
-            <div className="space-y-4 text-gray-900">
-              <p>
-                <span className="font-bold">Type:</span> {selectedItem.type}
-              </p>
+          {/* DETAILS MODE */}
+          {modalMode === "details" && selectedItem && (
+            <div className="space-y-4">
+              <div className="bg-gray-50 p-5 rounded-2xl border">
+                <p className="text-sm text-gray-500 font-semibold">Type</p>
+                <p className="text-lg font-extrabold text-cyan-900">
+                  {selectedItem.type}
+                </p>
+              </div>
 
               {"title" in selectedItem && (
-                <p>
-                  <span className="font-bold">Title:</span> {selectedItem.title}
-                </p>
+                <div className="bg-gray-50 p-5 rounded-2xl border">
+                  <p className="text-sm text-gray-500 font-semibold">Title</p>
+                  <p className="text-lg font-bold text-black">
+                    {selectedItem.title}
+                  </p>
+                </div>
               )}
 
               {"name" in selectedItem && (
-                <p>
-                  <span className="font-bold">Client Name:</span>{" "}
-                  {selectedItem.name}
-                </p>
-              )}
-
-              {"country" in selectedItem && (
-                <p>
-                  <span className="font-bold">Country:</span>{" "}
-                  {selectedItem.country}
-                </p>
+                <div className="bg-gray-50 p-5 rounded-2xl border">
+                  <p className="text-sm text-gray-500 font-semibold">Client Name</p>
+                  <p className="text-lg font-bold text-black">
+                    {selectedItem.name}
+                  </p>
+                </div>
               )}
 
               {"clientName" in selectedItem && (
-                <p>
-                  <span className="font-bold">Client:</span>{" "}
-                  {selectedItem.clientName}
-                </p>
+                <div className="bg-gray-50 p-5 rounded-2xl border">
+                  <p className="text-sm text-gray-500 font-semibold">Client</p>
+                  <p className="text-lg font-bold text-black">
+                    {selectedItem.clientName}
+                  </p>
+                </div>
               )}
 
               {"projectTitle" in selectedItem && (
-                <p>
-                  <span className="font-bold">Project:</span>{" "}
-                  {selectedItem.projectTitle}
-                </p>
+                <div className="bg-gray-50 p-5 rounded-2xl border">
+                  <p className="text-sm text-gray-500 font-semibold">Project</p>
+                  <p className="text-lg font-bold text-black">
+                    {selectedItem.projectTitle}
+                  </p>
+                </div>
               )}
 
-              {"status" in selectedItem && (
-                <p>
-                  <span className="font-bold">Status:</span>{" "}
-                  <StatusBadge status={selectedItem.status} />
-                </p>
+              {"details" in selectedItem && (
+                <div className="bg-gray-50 p-5 rounded-2xl border">
+                  <p className="text-sm text-gray-500 font-semibold">Details</p>
+                  <p className="text-base font-medium text-black whitespace-pre-wrap leading-relaxed">
+                    {selectedItem.details}
+                  </p>
+                </div>
               )}
-
-              {"priority" in selectedItem && (
-                <p>
-                  <span className="font-bold">Priority:</span>{" "}
-                  <PriorityBadge priority={selectedItem.priority} />
-                </p>
-              )}
-
-              {"deadline" in selectedItem && (
-                <p>
-                  <span className="font-bold">Deadline:</span>{" "}
-                  {selectedItem.deadline || "—"}
-                </p>
-              )}
-
-              <div>
-                <p className="font-bold mb-1">Details:</p>
-                <p className="text-gray-800 whitespace-pre-wrap">
-                  {selectedItem.details}
-                </p>
-              </div>
             </div>
-          ) : (
+          )}
+
+          {/* ADD / EDIT MODE */}
+          {modalMode !== "details" && (
             <div className="space-y-6">
-              {/* Type selector (Add only) */}
               {modalMode === "add" && (
                 <div>
                   <label className="block text-sm font-bold text-gray-900 mb-2">
@@ -1072,9 +1009,7 @@ export default function Page() {
                   </label>
                   <select
                     value={selectedType}
-                    onChange={(e) =>
-                      setSelectedType(e.target.value as SectionType)
-                    }
+                    onChange={(e) => setSelectedType(e.target.value as SectionType)}
                     className="w-full p-3 border border-gray-300 rounded-2xl text-black"
                   >
                     <option value="Task">Task</option>
@@ -1085,7 +1020,6 @@ export default function Page() {
                 </div>
               )}
 
-              {/* Client Fields */}
               {selectedType === "Client" && (
                 <>
                   <div>
@@ -1093,11 +1027,10 @@ export default function Page() {
                       Client Name *
                     </label>
                     <input
-                      type="text"
                       value={formClientName}
                       onChange={(e) => setFormClientName(e.target.value)}
                       className="w-full p-3 border border-gray-300 rounded-2xl text-black"
-                      placeholder="Client name"
+                      placeholder="Enter client name"
                     />
                   </div>
 
@@ -1106,45 +1039,40 @@ export default function Page() {
                       Country *
                     </label>
                     <input
-                      type="text"
                       value={formClientCountry}
                       onChange={(e) => setFormClientCountry(e.target.value)}
                       className="w-full p-3 border border-gray-300 rounded-2xl text-black"
-                      placeholder="Country"
+                      placeholder="Enter country"
                     />
                   </div>
                 </>
               )}
 
-              {/* Task / Project / Note Title */}
-              {(selectedType === "Task" ||
-                selectedType === "Project" ||
-                selectedType === "Note") && (
+              {(selectedType === "Task" || selectedType === "Project" || selectedType === "Note") && (
                 <div>
                   <label className="block text-sm font-bold text-gray-900 mb-2">
                     Title *
                   </label>
                   <input
-                    type="text"
                     value={formTitle}
                     onChange={(e) => setFormTitle(e.target.value)}
                     className="w-full p-3 border border-gray-300 rounded-2xl text-black"
+                    placeholder="Enter title"
                   />
                 </div>
               )}
 
-              {/* Relations */}
               {selectedType === "Project" && (
                 <div>
                   <label className="block text-sm font-bold text-gray-900 mb-2">
-                    Client *
+                    Select Client *
                   </label>
                   <select
                     value={formSelectedClientId}
                     onChange={(e) => setFormSelectedClientId(e.target.value)}
                     className="w-full p-3 border border-gray-300 rounded-2xl text-black"
                   >
-                    <option value="">Select a client</option>
+                    <option value="">Select client</option>
                     {clients.map((c) => (
                       <option key={c.id} value={c.id}>
                         {c.name} ({c.country})
@@ -1157,46 +1085,23 @@ export default function Page() {
               {selectedType === "Task" && (
                 <div>
                   <label className="block text-sm font-bold text-gray-900 mb-2">
-                    Project *
+                    Select Project *
                   </label>
                   <select
                     value={formSelectedProjectId}
                     onChange={(e) => setFormSelectedProjectId(e.target.value)}
                     className="w-full p-3 border border-gray-300 rounded-2xl text-black"
                   >
-                    <option value="">Select a project</option>
+                    <option value="">Select project</option>
                     {projects.map((p) => (
                       <option key={p.id} value={p.id}>
-                        {p.title}
+                        {p.title} ({p.clientName})
                       </option>
                     ))}
                   </select>
                 </div>
               )}
 
-              {/* Priority */}
-              {(selectedType === "Task" || selectedType === "Project") && (
-                <div>
-                  <label className="block text-sm font-bold text-gray-900 mb-2">
-                    Priority
-                  </label>
-                  <select
-                    value={formPriority}
-                    onChange={(e) =>
-                      setFormPriority(
-                        e.target.value as "Low" | "Medium" | "High"
-                      )
-                    }
-                    className="w-full p-3 border border-gray-300 rounded-2xl text-black"
-                  >
-                    <option value="Low">Low</option>
-                    <option value="Medium">Medium</option>
-                    <option value="High">High</option>
-                  </select>
-                </div>
-              )}
-
-              {/* Status */}
               {selectedType !== "Note" && (
                 <div>
                   <label className="block text-sm font-bold text-gray-900 mb-2">
@@ -1204,9 +1109,7 @@ export default function Page() {
                   </label>
                   <select
                     value={formStatus}
-                    onChange={(e) =>
-                      setFormStatus(e.target.value as StatusType)
-                    }
+                    onChange={(e) => setFormStatus(e.target.value as StatusType)}
                     className="w-full p-3 border border-gray-300 rounded-2xl text-black"
                   >
                     <option value="Pending">Pending</option>
@@ -1217,7 +1120,25 @@ export default function Page() {
                 </div>
               )}
 
-              {/* Details */}
+              {(selectedType === "Task" || selectedType === "Project") && (
+                <div>
+                  <label className="block text-sm font-bold text-gray-900 mb-2">
+                    Priority
+                  </label>
+                  <select
+                    value={formPriority}
+                    onChange={(e) =>
+                      setFormPriority(e.target.value as "Low" | "Medium" | "High")
+                    }
+                    className="w-full p-3 border border-gray-300 rounded-2xl text-black"
+                  >
+                    <option value="Low">Low</option>
+                    <option value="Medium">Medium</option>
+                    <option value="High">High</option>
+                  </select>
+                </div>
+              )}
+
               <div>
                 <label className="block text-sm font-bold text-gray-900 mb-2">
                   Details *
@@ -1225,13 +1146,12 @@ export default function Page() {
                 <textarea
                   value={formDetails}
                   onChange={(e) => setFormDetails(e.target.value)}
-                  rows={4}
+                  rows={5}
                   className="w-full p-3 border border-gray-300 rounded-2xl text-black"
-                  placeholder="Enter details..."
+                  placeholder="Write details..."
                 />
               </div>
 
-              {/* Deadline */}
               <div>
                 <label className="block text-sm font-bold text-gray-900 mb-2">
                   Deadline (Optional)
@@ -1244,14 +1164,13 @@ export default function Page() {
                 />
               </div>
 
-              {/* Buttons */}
               <div className="flex justify-end gap-3 pt-8 border-t mt-8">
                 <button
                   onClick={() => {
                     setModalOpen(false);
                     resetForm();
                   }}
-                  className="px-6 py-3 rounded-2xl border border-gray-300 hover:bg-gray-50 transition font-bold"
+                  className="px-6 py-3 rounded-2xl border border-gray-300 font-bold hover:bg-gray-50 transition"
                 >
                   Cancel
                 </button>
