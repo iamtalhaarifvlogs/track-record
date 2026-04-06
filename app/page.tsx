@@ -1176,19 +1176,20 @@ export default function Page() {
                   </div>
                 )}
 
-                {selectedType !== "Client" && selectedType !== "Project" && (
-                  <div>
-                    <label className="font-bold text-gray-900 block mb-2">
-                      Title
-                    </label>
-                    <input
-                      value={formTitle}
-                      onChange={(e) => setFormTitle(e.target.value)}
-                      className="w-full border rounded-2xl px-4 py-3 text-gray-900"
-                      placeholder="e.g. Finish UI improvements"
-                    />
-                  </div>
-                )}
+                
+                {selectedType !== "Project" && (
+  <div>
+    <label className="font-bold text-gray-900 block mb-2">
+      Title
+    </label>
+    <input
+      value={formTitle}
+      onChange={(e) => setFormTitle(e.target.value)}
+      className="w-full border rounded-2xl px-4 py-3 text-gray-900"
+      placeholder="e.g. Finish UI improvements"
+    />
+  </div>
+)}
 
                 {selectedType !== "Note" && (
                   <>
