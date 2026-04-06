@@ -75,9 +75,7 @@ function StatusBadge({ status }: { status: StatusType }) {
       : "bg-gray-100 text-gray-800 border-gray-200";
 
   return (
-    <span
-      className={`px-3 py-1 rounded-full text-xs font-semibold border ${styles}`}
-    >
+    <span className={`px-3 py-1 rounded-full text-xs font-semibold border ${styles}`}>
       {status}
     </span>
   );
@@ -92,9 +90,7 @@ function PriorityBadge({ priority }: { priority: "Low" | "Medium" | "High" }) {
       : "bg-emerald-100 text-emerald-800 border-emerald-200";
 
   return (
-    <span
-      className={`px-3 py-1 rounded-full text-xs font-semibold border ${styles}`}
-    >
+    <span className={`px-3 py-1 rounded-full text-xs font-semibold border ${styles}`}>
       {priority}
     </span>
   );
@@ -154,12 +150,10 @@ function Pagination({
       >
         Prev
       </button>
-
       <p className="text-gray-700 font-medium text-sm">
         Page <span className="font-bold">{currentPage}</span> of{" "}
         <span className="font-bold">{totalPages}</span>
       </p>
-
       <button
         onClick={onNext}
         disabled={currentPage === totalPages}
@@ -177,28 +171,27 @@ export default function Page() {
   const [clients, setClients] = useState<ClientItem[]>([]);
   const [notes, setNotes] = useState<NoteItem[]>([]);
 
-  // Pagination
+  // Pagination states
   const [taskPage, setTaskPage] = useState(1);
   const [projectPage, setProjectPage] = useState(1);
   const [clientPage, setClientPage] = useState(1);
   const [notePage, setNotePage] = useState(1);
-
   const itemsPerPage = 5;
 
-  // Modal
+  // Modal states
   const [modalOpen, setModalOpen] = useState(false);
   const [modalMode, setModalMode] = useState<"add" | "edit" | "details">("add");
   const [selectedType, setSelectedType] = useState<SectionType>("Task");
   const [selectedItem, setSelectedItem] = useState<AnyItem | null>(null);
 
-  // Shared form states
+  // Form states
   const [formTitle, setFormTitle] = useState("");
   const [formDetails, setFormDetails] = useState("");
   const [formStatus, setFormStatus] = useState<StatusType>("Pending");
   const [formPriority, setFormPriority] = useState<"Low" | "Medium" | "High">("Medium");
   const [formDeadline, setFormDeadline] = useState("");
 
-  // Client-specific
+  // Client specific
   const [formClientName, setFormClientName] = useState("");
   const [formClientCountry, setFormClientCountry] = useState("");
 
@@ -206,7 +199,7 @@ export default function Page() {
   const [formSelectedClientId, setFormSelectedClientId] = useState("");
   const [formSelectedProjectId, setFormSelectedProjectId] = useState("");
 
-  // Load from localStorage
+  // Load data
   useEffect(() => {
     const stored = localStorage.getItem(STORAGE_KEY);
     if (stored) {
@@ -218,7 +211,7 @@ export default function Page() {
     }
   }, []);
 
-  // Save to localStorage
+  // Auto save
   useEffect(() => {
     localStorage.setItem(
       STORAGE_KEY,
@@ -308,7 +301,6 @@ export default function Page() {
 
   function handleSave() {
     if (modalMode === "add") {
-      // Client
       if (selectedType === "Client") {
         if (!formClientName.trim()) return alert("Client name is required.");
         if (!formClientCountry.trim()) return alert("Country is required.");
@@ -324,12 +316,8 @@ export default function Page() {
           deadline: formDeadline || undefined,
           details: formDetails.trim(),
         };
-
         setClients((prev) => [newClient, ...prev]);
-      }
-
-      // Project
-      else if (selectedType === "Project") {
+      } else if (selectedType === "Project") {
         if (!formTitle.trim()) return alert("Project title is required.");
         if (!formDetails.trim()) return alert("Details are required.");
         if (!formSelectedClientId) return alert("Please select a client.");
@@ -349,12 +337,8 @@ export default function Page() {
           deadline: formDeadline || undefined,
           details: formDetails.trim(),
         };
-
         setProjects((prev) => [newProject, ...prev]);
-      }
-
-      // Task
-      else if (selectedType === "Task") {
+      } else if (selectedType === "Task") {
         if (!formTitle.trim()) return alert("Task title is required.");
         if (!formDetails.trim()) return alert("Details are required.");
         if (!formSelectedProjectId) return alert("Please select a project.");
@@ -374,12 +358,8 @@ export default function Page() {
           deadline: formDeadline || undefined,
           details: formDetails.trim(),
         };
-
         setTasks((prev) => [newTask, ...prev]);
-      }
-
-      // Note
-      else if (selectedType === "Note") {
+      } else if (selectedType === "Note") {
         if (!formTitle.trim()) return alert("Note title is required.");
         if (!formDetails.trim()) return alert("Details are required.");
 
@@ -390,17 +370,15 @@ export default function Page() {
           createdAt: formatDate(new Date()),
           details: formDetails.trim(),
         };
-
         setNotes((prev) => [newNote, ...prev]);
       }
     } 
-    // EDIT MODE
+    // Edit Mode
     else if (modalMode === "edit" && selectedItem) {
-      // ... (Edit logic remains same as before - kept clean)
       if (selectedItem.type === "Client") {
-        if (!formClientName.trim() || !formClientCountry.trim() || !formDetails.trim()) {
+        if (!formClientName.trim() || !formClientCountry.trim() || !formDetails.trim())
           return alert("All fields are required.");
-        }
+
         const updated: ClientItem = {
           ...selectedItem,
           name: formClientName.trim(),
@@ -414,8 +392,9 @@ export default function Page() {
           prev.map((p) => (p.clientId === updated.id ? { ...p, clientName: updated.name } : p))
         );
       } else if (selectedItem.type === "Project") {
-        // Project edit logic (same as your original)
-        if (!formTitle.trim() || !formDetails.trim() || !formSelectedClientId) return alert("Required fields missing.");
+        if (!formTitle.trim() || !formDetails.trim() || !formSelectedClientId)
+          return alert("Required fields missing.");
+
         const client = clients.find((c) => c.id === formSelectedClientId);
         if (!client) return alert("Client not found.");
 
@@ -434,8 +413,9 @@ export default function Page() {
           prev.map((t) => (t.projectId === updated.id ? { ...t, projectTitle: updated.title } : t))
         );
       } else if (selectedItem.type === "Task") {
-        // Task edit logic
-        if (!formTitle.trim() || !formDetails.trim() || !formSelectedProjectId) return alert("Required fields missing.");
+        if (!formTitle.trim() || !formDetails.trim() || !formSelectedProjectId)
+          return alert("Required fields missing.");
+
         const project = projects.find((p) => p.id === formSelectedProjectId);
         if (!project) return alert("Project not found.");
 
@@ -452,6 +432,7 @@ export default function Page() {
         setTasks((prev) => prev.map((x) => (x.id === updated.id ? updated : x)));
       } else if (selectedItem.type === "Note") {
         if (!formTitle.trim() || !formDetails.trim()) return alert("Required fields missing.");
+
         const updated: NoteItem = {
           ...selectedItem,
           title: formTitle.trim(),
@@ -485,7 +466,7 @@ export default function Page() {
       <Header />
 
       <main className="container mx-auto px-6 py-12 max-w-6xl space-y-20">
-        {/* HERO */}
+        {/* Hero */}
         <section className="bg-white rounded-3xl shadow-xl border overflow-hidden">
           <div className="bg-gradient-to-r from-cyan-900 via-blue-900 to-cyan-800 px-8 py-10 text-white">
             <h1 className="text-3xl md:text-5xl font-extrabold">Talha&apos;s Diary Dashboard</h1>
@@ -503,15 +484,12 @@ export default function Page() {
           </div>
         </section>
 
-        {/* TASKS SECTION - You can continue adding other sections similarly */}
+        {/* TASKS */}
         <section id="tasks" className="scroll-mt-32">
           <div className="flex items-center justify-between mb-6 flex-wrap gap-3">
             <h2 className="text-3xl font-extrabold text-cyan-900">Tasks</h2>
-            <p className="text-gray-600 font-medium">
-              Total: <span className="font-bold">{tasks.length}</span>
-            </p>
+            <p className="text-gray-600 font-medium">Total: <span className="font-bold">{tasks.length}</span></p>
           </div>
-
           <div className="bg-white rounded-3xl shadow-xl border overflow-hidden">
             <div className="overflow-x-auto">
               <table className="w-full text-left">
@@ -527,44 +505,19 @@ export default function Page() {
                 </thead>
                 <tbody>
                   {paginatedTasks.length === 0 ? (
-                    <tr>
-                      <td className="px-6 py-8 text-gray-500 text-center" colSpan={6}>
-                        No tasks yet. Click "Add New Entry" to get started.
-                      </td>
-                    </tr>
+                    <tr><td colSpan={6} className="px-6 py-8 text-center text-gray-500">No tasks yet. Add your first task.</td></tr>
                   ) : (
                     paginatedTasks.map((task) => (
-                      <tr key={task.id} className="border-t hover:bg-gray-50 transition">
-                        <td className="px-6 py-5 font-semibold text-gray-900">{task.title}</td>
+                      <tr key={task.id} className="border-t hover:bg-gray-50">
+                        <td className="px-6 py-5 font-semibold">{task.title}</td>
                         <td className="px-6 py-5 text-gray-700">{task.projectTitle}</td>
-                        <td className="px-6 py-5">
-                          <StatusBadge status={task.status} />
-                        </td>
-                        <td className="px-6 py-5">
-                          <PriorityBadge priority={task.priority} />
-                        </td>
-                        <td className="px-6 py-5 text-gray-600">
-                          {task.deadline || "—"}
-                        </td>
-                        <td className="px-6 py-5 text-right space-x-2">
-                          <button
-                            onClick={() => openDetailsModal(task)}
-                            className="text-blue-600 hover:text-blue-700"
-                          >
-                            View
-                          </button>
-                          <button
-                            onClick={() => openEditModal(task)}
-                            className="text-amber-600 hover:text-amber-700"
-                          >
-                            Edit
-                          </button>
-                          <button
-                            onClick={() => deleteItem(task)}
-                            className="text-red-600 hover:text-red-700"
-                          >
-                            Delete
-                          </button>
+                        <td className="px-6 py-5"><StatusBadge status={task.status} /></td>
+                        <td className="px-6 py-5"><PriorityBadge priority={task.priority} /></td>
+                        <td className="px-6 py-5 text-gray-600">{task.deadline || "—"}</td>
+                        <td className="px-6 py-5 text-right space-x-3">
+                          <button onClick={() => openDetailsModal(task)} className="text-blue-600 hover:underline">View</button>
+                          <button onClick={() => openEditModal(task)} className="text-amber-600 hover:underline">Edit</button>
+                          <button onClick={() => deleteItem(task)} className="text-red-600 hover:underline">Delete</button>
                         </td>
                       </tr>
                     ))
@@ -572,15 +525,148 @@ export default function Page() {
                 </tbody>
               </table>
             </div>
-
             {totalTaskPages > 1 && (
-              <div className="px-6 py-4 border-t">
-                <Pagination
-                  currentPage={taskPage}
-                  totalPages={totalTaskPages}
-                  onNext={() => setTaskPage((p) => Math.min(p + 1, totalTaskPages))}
-                  onPrev={() => setTaskPage((p) => Math.max(p - 1, 1))}
-                />
+              <div className="p-6 border-t">
+                <Pagination currentPage={taskPage} totalPages={totalTaskPages} onNext={() => setTaskPage(p => Math.min(p+1, totalTaskPages))} onPrev={() => setTaskPage(p => Math.max(p-1, 1))} />
+              </div>
+            )}
+          </div>
+        </section>
+
+        {/* PROJECTS */}
+        <section id="projects" className="scroll-mt-32">
+          <div className="flex items-center justify-between mb-6 flex-wrap gap-3">
+            <h2 className="text-3xl font-extrabold text-cyan-900">Projects</h2>
+            <p className="text-gray-600 font-medium">Total: <span className="font-bold">{projects.length}</span></p>
+          </div>
+          <div className="bg-white rounded-3xl shadow-xl border overflow-hidden">
+            <div className="overflow-x-auto">
+              <table className="w-full text-left">
+                <thead className="bg-gray-100 text-gray-700 text-sm">
+                  <tr>
+                    <th className="px-6 py-4 font-bold">Project</th>
+                    <th className="px-6 py-4 font-bold">Client</th>
+                    <th className="px-6 py-4 font-bold">Status</th>
+                    <th className="px-6 py-4 font-bold">Priority</th>
+                    <th className="px-6 py-4 font-bold">Deadline</th>
+                    <th className="px-6 py-4 font-bold text-right">Actions</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {paginatedProjects.length === 0 ? (
+                    <tr><td colSpan={6} className="px-6 py-8 text-center text-gray-500">No projects yet.</td></tr>
+                  ) : (
+                    paginatedProjects.map((project) => (
+                      <tr key={project.id} className="border-t hover:bg-gray-50">
+                        <td className="px-6 py-5 font-semibold">{project.title}</td>
+                        <td className="px-6 py-5 text-gray-700">{project.clientName}</td>
+                        <td className="px-6 py-5"><StatusBadge status={project.status} /></td>
+                        <td className="px-6 py-5"><PriorityBadge priority={project.priority} /></td>
+                        <td className="px-6 py-5 text-gray-600">{project.deadline || "—"}</td>
+                        <td className="px-6 py-5 text-right space-x-3">
+                          <button onClick={() => openDetailsModal(project)} className="text-blue-600 hover:underline">View</button>
+                          <button onClick={() => openEditModal(project)} className="text-amber-600 hover:underline">Edit</button>
+                          <button onClick={() => deleteItem(project)} className="text-red-600 hover:underline">Delete</button>
+                        </td>
+                      </tr>
+                    ))
+                  )}
+                </tbody>
+              </table>
+            </div>
+            {totalProjectPages > 1 && (
+              <div className="p-6 border-t">
+                <Pagination currentPage={projectPage} totalPages={totalProjectPages} onNext={() => setProjectPage(p => Math.min(p+1, totalProjectPages))} onPrev={() => setProjectPage(p => Math.max(p-1, 1))} />
+              </div>
+            )}
+          </div>
+        </section>
+
+        {/* CLIENTS */}
+        <section id="clients" className="scroll-mt-32">
+          <div className="flex items-center justify-between mb-6 flex-wrap gap-3">
+            <h2 className="text-3xl font-extrabold text-cyan-900">Clients</h2>
+            <p className="text-gray-600 font-medium">Total: <span className="font-bold">{clients.length}</span></p>
+          </div>
+          <div className="bg-white rounded-3xl shadow-xl border overflow-hidden">
+            <div className="overflow-x-auto">
+              <table className="w-full text-left">
+                <thead className="bg-gray-100 text-gray-700 text-sm">
+                  <tr>
+                    <th className="px-6 py-4 font-bold">Client Name</th>
+                    <th className="px-6 py-4 font-bold">Country</th>
+                    <th className="px-6 py-4 font-bold">Status</th>
+                    <th className="px-6 py-4 font-bold">Deadline</th>
+                    <th className="px-6 py-4 font-bold text-right">Actions</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {paginatedClients.length === 0 ? (
+                    <tr><td colSpan={5} className="px-6 py-8 text-center text-gray-500">No clients yet.</td></tr>
+                  ) : (
+                    paginatedClients.map((client) => (
+                      <tr key={client.id} className="border-t hover:bg-gray-50">
+                        <td className="px-6 py-5 font-semibold">{client.name}</td>
+                        <td className="px-6 py-5 text-gray-700">{client.country}</td>
+                        <td className="px-6 py-5"><StatusBadge status={client.status} /></td>
+                        <td className="px-6 py-5 text-gray-600">{client.deadline || "—"}</td>
+                        <td className="px-6 py-5 text-right space-x-3">
+                          <button onClick={() => openDetailsModal(client)} className="text-blue-600 hover:underline">View</button>
+                          <button onClick={() => openEditModal(client)} className="text-amber-600 hover:underline">Edit</button>
+                          <button onClick={() => deleteItem(client)} className="text-red-600 hover:underline">Delete</button>
+                        </td>
+                      </tr>
+                    ))
+                  )}
+                </tbody>
+              </table>
+            </div>
+            {totalClientPages > 1 && (
+              <div className="p-6 border-t">
+                <Pagination currentPage={clientPage} totalPages={totalClientPages} onNext={() => setClientPage(p => Math.min(p+1, totalClientPages))} onPrev={() => setClientPage(p => Math.max(p-1, 1))} />
+              </div>
+            )}
+          </div>
+        </section>
+
+        {/* NOTES */}
+        <section id="notes" className="scroll-mt-32">
+          <div className="flex items-center justify-between mb-6 flex-wrap gap-3">
+            <h2 className="text-3xl font-extrabold text-cyan-900">Notes</h2>
+            <p className="text-gray-600 font-medium">Total: <span className="font-bold">{notes.length}</span></p>
+          </div>
+          <div className="bg-white rounded-3xl shadow-xl border overflow-hidden">
+            <div className="overflow-x-auto">
+              <table className="w-full text-left">
+                <thead className="bg-gray-100 text-gray-700 text-sm">
+                  <tr>
+                    <th className="px-6 py-4 font-bold">Note Title</th>
+                    <th className="px-6 py-4 font-bold">Created</th>
+                    <th className="px-6 py-4 font-bold text-right">Actions</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {paginatedNotes.length === 0 ? (
+                    <tr><td colSpan={3} className="px-6 py-8 text-center text-gray-500">No notes yet.</td></tr>
+                  ) : (
+                    paginatedNotes.map((note) => (
+                      <tr key={note.id} className="border-t hover:bg-gray-50">
+                        <td className="px-6 py-5 font-semibold">{note.title}</td>
+                        <td className="px-6 py-5 text-gray-600">{note.createdAt}</td>
+                        <td className="px-6 py-5 text-right space-x-3">
+                          <button onClick={() => openDetailsModal(note)} className="text-blue-600 hover:underline">View</button>
+                          <button onClick={() => openEditModal(note)} className="text-amber-600 hover:underline">Edit</button>
+                          <button onClick={() => deleteItem(note)} className="text-red-600 hover:underline">Delete</button>
+                        </td>
+                      </tr>
+                    ))
+                  )}
+                </tbody>
+              </table>
+            </div>
+            {totalNotePages > 1 && (
+              <div className="p-6 border-t">
+                <Pagination currentPage={notePage} totalPages={totalNotePages} onNext={() => setNotePage(p => Math.min(p+1, totalNotePages))} onPrev={() => setNotePage(p => Math.max(p-1, 1))} />
               </div>
             )}
           </div>
@@ -596,10 +682,10 @@ export default function Page() {
           }}
         >
           <div className="space-y-6">
-            {/* Type Selector - Only show when adding new */}
+            {/* Type Selector (only for Add) */}
             {modalMode === "add" && (
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">Type</label>
+                <label className="block text-sm font-medium text-gray-700 mb-2">Entry Type</label>
                 <select
                   value={selectedType}
                   onChange={(e) => setSelectedType(e.target.value as SectionType)}
@@ -613,51 +699,30 @@ export default function Page() {
               </div>
             )}
 
-            {/* Form Fields */}
+            {/* Client Fields */}
             {selectedType === "Client" && (
               <>
                 <div>
-                  <label className="block text-sm font-medium mb-1">Client Name</label>
-                  <input
-                    type="text"
-                    value={formClientName}
-                    onChange={(e) => setFormClientName(e.target.value)}
-                    className="w-full p-3 border border-gray-300 rounded-2xl focus:outline-none focus:ring-2 focus:ring-cyan-500"
-                    placeholder="Enter client name"
-                  />
+                  <label className="block text-sm font-medium mb-1">Client Name *</label>
+                  <input type="text" value={formClientName} onChange={(e) => setFormClientName(e.target.value)} className="w-full p-3 border border-gray-300 rounded-2xl" placeholder="Client name" />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium mb-1">Country</label>
-                  <input
-                    type="text"
-                    value={formClientCountry}
-                    onChange={(e) => setFormClientCountry(e.target.value)}
-                    className="w-full p-3 border border-gray-300 rounded-2xl focus:outline-none focus:ring-2 focus:ring-cyan-500"
-                    placeholder="Enter country"
-                  />
+                  <label className="block text-sm font-medium mb-1">Country *</label>
+                  <input type="text" value={formClientCountry} onChange={(e) => setFormClientCountry(e.target.value)} className="w-full p-3 border border-gray-300 rounded-2xl" placeholder="Country" />
                 </div>
               </>
             )}
 
+            {/* Task & Project Fields */}
             {(selectedType === "Task" || selectedType === "Project") && (
               <>
                 <div>
-                  <label className="block text-sm font-medium mb-1">Title</label>
-                  <input
-                    type="text"
-                    value={formTitle}
-                    onChange={(e) => setFormTitle(e.target.value)}
-                    className="w-full p-3 border border-gray-300 rounded-2xl focus:outline-none focus:ring-2 focus:ring-cyan-500"
-                  />
+                  <label className="block text-sm font-medium mb-1">Title *</label>
+                  <input type="text" value={formTitle} onChange={(e) => setFormTitle(e.target.value)} className="w-full p-3 border border-gray-300 rounded-2xl" />
                 </div>
-
                 <div>
                   <label className="block text-sm font-medium mb-1">Priority</label>
-                  <select
-                    value={formPriority}
-                    onChange={(e) => setFormPriority(e.target.value as "Low" | "Medium" | "High")}
-                    className="w-full p-3 border border-gray-300 rounded-2xl"
-                  >
+                  <select value={formPriority} onChange={(e) => setFormPriority(e.target.value as "Low" | "Medium" | "High")} className="w-full p-3 border border-gray-300 rounded-2xl">
                     <option value="Low">Low</option>
                     <option value="Medium">Medium</option>
                     <option value="High">High</option>
@@ -666,14 +731,11 @@ export default function Page() {
               </>
             )}
 
+            {/* Status (except Notes) */}
             {selectedType !== "Note" && (
               <div>
                 <label className="block text-sm font-medium mb-1">Status</label>
-                <select
-                  value={formStatus}
-                  onChange={(e) => setFormStatus(e.target.value as StatusType)}
-                  className="w-full p-3 border border-gray-300 rounded-2xl"
-                >
+                <select value={formStatus} onChange={(e) => setFormStatus(e.target.value as StatusType)} className="w-full p-3 border border-gray-300 rounded-2xl">
                   <option value="Pending">Pending</option>
                   <option value="In Progress">In Progress</option>
                   <option value="Completed">Completed</option>
@@ -684,40 +746,23 @@ export default function Page() {
 
             {/* Common Fields */}
             <div>
-              <label className="block text-sm font-medium mb-1">Details</label>
-              <textarea
-                value={formDetails}
-                onChange={(e) => setFormDetails(e.target.value)}
-                rows={4}
-                className="w-full p-3 border border-gray-300 rounded-2xl focus:outline-none focus:ring-2 focus:ring-cyan-500"
-                placeholder="Enter details..."
-              />
+              <label className="block text-sm font-medium mb-1">Details *</label>
+              <textarea value={formDetails} onChange={(e) => setFormDetails(e.target.value)} rows={4} className="w-full p-3 border border-gray-300 rounded-2xl" placeholder="Enter details..." />
             </div>
 
             <div>
               <label className="block text-sm font-medium mb-1">Deadline (Optional)</label>
-              <input
-                type="date"
-                value={formDeadline}
-                onChange={(e) => setFormDeadline(e.target.value)}
-                className="w-full p-3 border border-gray-300 rounded-2xl"
-              />
+              <input type="date" value={formDeadline} onChange={(e) => setFormDeadline(e.target.value)} className="w-full p-3 border border-gray-300 rounded-2xl" />
             </div>
 
-            {/* Relation Fields */}
+            {/* Relations */}
             {selectedType === "Project" && (
               <div>
-                <label className="block text-sm font-medium mb-1">Client</label>
-                <select
-                  value={formSelectedClientId}
-                  onChange={(e) => setFormSelectedClientId(e.target.value)}
-                  className="w-full p-3 border border-gray-300 rounded-2xl"
-                >
-                  <option value="">Select Client</option>
-                  {clients.map((client) => (
-                    <option key={client.id} value={client.id}>
-                      {client.name} ({client.country})
-                    </option>
+                <label className="block text-sm font-medium mb-1">Client *</label>
+                <select value={formSelectedClientId} onChange={(e) => setFormSelectedClientId(e.target.value)} className="w-full p-3 border border-gray-300 rounded-2xl">
+                  <option value="">Select a client</option>
+                  {clients.map((c) => (
+                    <option key={c.id} value={c.id}>{c.name} ({c.country})</option>
                   ))}
                 </select>
               </div>
@@ -725,24 +770,18 @@ export default function Page() {
 
             {selectedType === "Task" && (
               <div>
-                <label className="block text-sm font-medium mb-1">Project</label>
-                <select
-                  value={formSelectedProjectId}
-                  onChange={(e) => setFormSelectedProjectId(e.target.value)}
-                  className="w-full p-3 border border-gray-300 rounded-2xl"
-                >
-                  <option value="">Select Project</option>
-                  {projects.map((project) => (
-                    <option key={project.id} value={project.id}>
-                      {project.title}
-                    </option>
+                <label className="block text-sm font-medium mb-1">Project *</label>
+                <select value={formSelectedProjectId} onChange={(e) => setFormSelectedProjectId(e.target.value)} className="w-full p-3 border border-gray-300 rounded-2xl">
+                  <option value="">Select a project</option>
+                  {projects.map((p) => (
+                    <option key={p.id} value={p.id}>{p.title}</option>
                   ))}
                 </select>
               </div>
             )}
 
-            {/* Action Buttons - ALWAYS VISIBLE */}
-            <div className="flex justify-end gap-3 pt-6 border-t mt-8">
+            {/* Save Buttons - ALWAYS VISIBLE */}
+            <div className="flex justify-end gap-3 pt-8 border-t mt-8">
               <button
                 onClick={() => {
                   setModalOpen(false);
@@ -756,12 +795,11 @@ export default function Page() {
                 onClick={handleSave}
                 className="px-8 py-3 bg-cyan-900 hover:bg-cyan-800 text-white font-semibold rounded-2xl transition"
               >
-                {modalMode === "edit" ? "Update" : "Save Entry"}
+                {modalMode === "edit" ? "Update Entry" : "Save Entry"}
               </button>
             </div>
           </div>
         </Modal>
-
       </main>
 
       <Footer />
