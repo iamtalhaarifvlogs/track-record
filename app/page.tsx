@@ -172,38 +172,29 @@ function Pagination({
   );
 }
 
-function ActionButtons({
-  onView,
-  onEdit,
-  onDelete,
+function ActionButton({
+  label,
+  variant,
+  onClick,
 }: {
-  onView: () => void;
-  onEdit: () => void;
-  onDelete: () => void;
+  label: string;
+  variant: "view" | "edit" | "delete";
+  onClick: () => void;
 }) {
+  const styles =
+    variant === "view"
+      ? "bg-blue-600 hover:bg-blue-500 text-white"
+      : variant === "edit"
+      ? "bg-amber-600 hover:bg-amber-500 text-white"
+      : "bg-red-600 hover:bg-red-500 text-white";
+
   return (
-    <div className="flex justify-end gap-2 flex-wrap">
-      <button
-        onClick={onView}
-        className="px-4 py-2 rounded-xl bg-blue-600 text-white font-semibold shadow hover:bg-blue-500 transition"
-      >
-        View
-      </button>
-
-      <button
-        onClick={onEdit}
-        className="px-4 py-2 rounded-xl bg-amber-500 text-white font-semibold shadow hover:bg-amber-400 transition"
-      >
-        Edit
-      </button>
-
-      <button
-        onClick={onDelete}
-        className="px-4 py-2 rounded-xl bg-red-600 text-white font-semibold shadow hover:bg-red-500 transition"
-      >
-        Delete
-      </button>
-    </div>
+    <button
+      onClick={onClick}
+      className={`px-4 py-2 rounded-xl font-bold text-sm shadow transition ${styles}`}
+    >
+      {label}
+    </button>
   );
 }
 
@@ -213,29 +204,30 @@ export default function Page() {
   const [clients, setClients] = useState<ClientItem[]>([]);
   const [notes, setNotes] = useState<NoteItem[]>([]);
 
-  // Pagination states
+  // Pagination
   const [taskPage, setTaskPage] = useState(1);
   const [projectPage, setProjectPage] = useState(1);
   const [clientPage, setClientPage] = useState(1);
   const [notePage, setNotePage] = useState(1);
+
   const itemsPerPage = 5;
 
-  // Modal states
+  // Modal
   const [modalOpen, setModalOpen] = useState(false);
   const [modalMode, setModalMode] = useState<"add" | "edit" | "details">("add");
   const [selectedType, setSelectedType] = useState<SectionType>("Task");
   const [selectedItem, setSelectedItem] = useState<AnyItem | null>(null);
 
-  // Form states
+  // Form shared
   const [formTitle, setFormTitle] = useState("");
   const [formDetails, setFormDetails] = useState("");
   const [formStatus, setFormStatus] = useState<StatusType>("Pending");
-  const [formPriority, setFormPriority] = useState<
-    "Low" | "Medium" | "High"
-  >("Medium");
+  const [formPriority, setFormPriority] = useState<"Low" | "Medium" | "High">(
+    "Medium"
+  );
   const [formDeadline, setFormDeadline] = useState("");
 
-  // Client specific
+  // Client form
   const [formClientName, setFormClientName] = useState("");
   const [formClientCountry, setFormClientCountry] = useState("");
 
@@ -243,7 +235,7 @@ export default function Page() {
   const [formSelectedClientId, setFormSelectedClientId] = useState("");
   const [formSelectedProjectId, setFormSelectedProjectId] = useState("");
 
-  // Load data
+  // Load storage
   useEffect(() => {
     const stored = localStorage.getItem(STORAGE_KEY);
     if (stored) {
@@ -255,7 +247,7 @@ export default function Page() {
     }
   }, []);
 
-  // Auto save
+  // Save storage
   useEffect(() => {
     localStorage.setItem(
       STORAGE_KEY,
@@ -269,8 +261,10 @@ export default function Page() {
     setFormStatus("Pending");
     setFormPriority("Medium");
     setFormDeadline("");
+
     setFormClientName("");
     setFormClientCountry("");
+
     setFormSelectedClientId("");
     setFormSelectedProjectId("");
   }
@@ -285,6 +279,7 @@ export default function Page() {
 
   function openDetailsModal(item: AnyItem) {
     setSelectedItem(item);
+    setSelectedType(item.type);
     setModalMode("details");
     setModalOpen(true);
   }
@@ -292,34 +287,37 @@ export default function Page() {
   function openEditModal(item: AnyItem) {
     resetForm();
     setSelectedItem(item);
+    setSelectedType(item.type);
     setModalMode("edit");
     setModalOpen(true);
 
     if (item.type === "Task") {
-      setSelectedType("Task");
       setFormTitle(item.title);
       setFormDetails(item.details);
       setFormStatus(item.status);
       setFormPriority(item.priority);
       setFormDeadline(item.deadline || "");
       setFormSelectedProjectId(item.projectId);
-    } else if (item.type === "Project") {
-      setSelectedType("Project");
+    }
+
+    if (item.type === "Project") {
       setFormTitle(item.title);
       setFormDetails(item.details);
       setFormStatus(item.status);
       setFormPriority(item.priority);
       setFormDeadline(item.deadline || "");
       setFormSelectedClientId(item.clientId);
-    } else if (item.type === "Client") {
-      setSelectedType("Client");
+    }
+
+    if (item.type === "Client") {
       setFormClientName(item.name);
       setFormClientCountry(item.country);
       setFormDetails(item.details);
       setFormStatus(item.status);
       setFormDeadline(item.deadline || "");
-    } else if (item.type === "Note") {
-      setSelectedType("Note");
+    }
+
+    if (item.type === "Note") {
       setFormTitle(item.title);
       setFormDetails(item.details);
     }
@@ -335,20 +333,29 @@ export default function Page() {
 
       setClients((prev) => prev.filter((x) => x.id !== item.id));
       setProjects((prev) => prev.filter((p) => p.clientId !== item.id));
-      setTasks((prev) =>
-        prev.filter((t) => !projectIds.includes(t.projectId))
-      );
-    } else if (item.type === "Project") {
+      setTasks((prev) => prev.filter((t) => !projectIds.includes(t.projectId)));
+      return;
+    }
+
+    if (item.type === "Project") {
       setProjects((prev) => prev.filter((x) => x.id !== item.id));
       setTasks((prev) => prev.filter((t) => t.projectId !== item.id));
-    } else if (item.type === "Task") {
+      return;
+    }
+
+    if (item.type === "Task") {
       setTasks((prev) => prev.filter((x) => x.id !== item.id));
-    } else if (item.type === "Note") {
+      return;
+    }
+
+    if (item.type === "Note") {
       setNotes((prev) => prev.filter((x) => x.id !== item.id));
+      return;
     }
   }
 
   function handleSave() {
+    // ADD
     if (modalMode === "add") {
       if (selectedType === "Client") {
         if (!formClientName.trim()) return alert("Client name is required.");
@@ -367,10 +374,13 @@ export default function Page() {
         };
 
         setClients((prev) => [newClient, ...prev]);
-      } else if (selectedType === "Project") {
+      }
+
+      if (selectedType === "Project") {
         if (!formTitle.trim()) return alert("Project title is required.");
         if (!formDetails.trim()) return alert("Details are required.");
-        if (!formSelectedClientId) return alert("Please select a client.");
+        if (!formSelectedClientId.trim())
+          return alert("Select a client for this project.");
 
         const client = clients.find((c) => c.id === formSelectedClientId);
         if (!client) return alert("Client not found.");
@@ -389,10 +399,13 @@ export default function Page() {
         };
 
         setProjects((prev) => [newProject, ...prev]);
-      } else if (selectedType === "Task") {
+      }
+
+      if (selectedType === "Task") {
         if (!formTitle.trim()) return alert("Task title is required.");
         if (!formDetails.trim()) return alert("Details are required.");
-        if (!formSelectedProjectId) return alert("Please select a project.");
+        if (!formSelectedProjectId.trim())
+          return alert("Select a project for this task.");
 
         const project = projects.find((p) => p.id === formSelectedProjectId);
         if (!project) return alert("Project not found.");
@@ -411,7 +424,9 @@ export default function Page() {
         };
 
         setTasks((prev) => [newTask, ...prev]);
-      } else if (selectedType === "Note") {
+      }
+
+      if (selectedType === "Note") {
         if (!formTitle.trim()) return alert("Note title is required.");
         if (!formDetails.trim()) return alert("Details are required.");
 
@@ -425,14 +440,14 @@ export default function Page() {
 
         setNotes((prev) => [newNote, ...prev]);
       }
-    } else if (modalMode === "edit" && selectedItem) {
+    }
+
+    // EDIT
+    if (modalMode === "edit" && selectedItem) {
       if (selectedItem.type === "Client") {
-        if (
-          !formClientName.trim() ||
-          !formClientCountry.trim() ||
-          !formDetails.trim()
-        )
-          return alert("All fields are required.");
+        if (!formClientName.trim()) return alert("Client name is required.");
+        if (!formClientCountry.trim()) return alert("Country is required.");
+        if (!formDetails.trim()) return alert("Details are required.");
 
         const updated: ClientItem = {
           ...selectedItem,
@@ -449,14 +464,16 @@ export default function Page() {
 
         setProjects((prev) =>
           prev.map((p) =>
-            p.clientId === updated.id
-              ? { ...p, clientName: updated.name }
-              : p
+            p.clientId === updated.id ? { ...p, clientName: updated.name } : p
           )
         );
-      } else if (selectedItem.type === "Project") {
-        if (!formTitle.trim() || !formDetails.trim() || !formSelectedClientId)
-          return alert("Required fields missing.");
+      }
+
+      if (selectedItem.type === "Project") {
+        if (!formTitle.trim()) return alert("Project title is required.");
+        if (!formDetails.trim()) return alert("Details are required.");
+        if (!formSelectedClientId.trim())
+          return alert("Select a client for this project.");
 
         const client = clients.find((c) => c.id === formSelectedClientId);
         if (!client) return alert("Client not found.");
@@ -483,9 +500,13 @@ export default function Page() {
               : t
           )
         );
-      } else if (selectedItem.type === "Task") {
-        if (!formTitle.trim() || !formDetails.trim() || !formSelectedProjectId)
-          return alert("Required fields missing.");
+      }
+
+      if (selectedItem.type === "Task") {
+        if (!formTitle.trim()) return alert("Task title is required.");
+        if (!formDetails.trim()) return alert("Details are required.");
+        if (!formSelectedProjectId.trim())
+          return alert("Select a project for this task.");
 
         const project = projects.find((p) => p.id === formSelectedProjectId);
         if (!project) return alert("Project not found.");
@@ -504,9 +525,11 @@ export default function Page() {
         setTasks((prev) =>
           prev.map((x) => (x.id === updated.id ? updated : x))
         );
-      } else if (selectedItem.type === "Note") {
-        if (!formTitle.trim() || !formDetails.trim())
-          return alert("Required fields missing.");
+      }
+
+      if (selectedItem.type === "Note") {
+        if (!formTitle.trim()) return alert("Note title is required.");
+        if (!formDetails.trim()) return alert("Details are required.");
 
         const updated: NoteItem = {
           ...selectedItem,
@@ -562,7 +585,7 @@ export default function Page() {
       <Header />
 
       <main className="container mx-auto px-6 py-12 max-w-6xl space-y-20">
-        {/* Hero */}
+        {/* HERO */}
         <section className="bg-white rounded-3xl shadow-xl border overflow-hidden">
           <div className="bg-gradient-to-r from-cyan-900 via-blue-900 to-cyan-800 px-8 py-10 text-white">
             <h1 className="text-3xl md:text-5xl font-extrabold">
@@ -621,11 +644,11 @@ export default function Page() {
                   ) : (
                     paginatedTasks.map((task) => (
                       <tr key={task.id} className="border-t hover:bg-gray-50">
-                        <td className="px-6 py-5 font-semibold text-gray-900">
+                        <td className="px-6 py-5 font-semibold text-black">
                           {task.title}
                         </td>
 
-                        <td className="px-6 py-5 text-gray-800 font-medium">
+                        <td className="px-6 py-5 text-black font-medium">
                           {task.projectTitle}
                         </td>
 
@@ -637,16 +660,28 @@ export default function Page() {
                           <PriorityBadge priority={task.priority} />
                         </td>
 
-                        <td className="px-6 py-5 text-gray-700">
+                        <td className="px-6 py-5 text-black">
                           {task.deadline || "—"}
                         </td>
 
                         <td className="px-6 py-5">
-                          <ActionButtons
-                            onView={() => openDetailsModal(task)}
-                            onEdit={() => openEditModal(task)}
-                            onDelete={() => deleteItem(task)}
-                          />
+                          <div className="flex justify-end gap-2 flex-wrap">
+                            <ActionButton
+                              label="View"
+                              variant="view"
+                              onClick={() => openDetailsModal(task)}
+                            />
+                            <ActionButton
+                              label="Edit"
+                              variant="edit"
+                              onClick={() => openEditModal(task)}
+                            />
+                            <ActionButton
+                              label="Delete"
+                              variant="delete"
+                              onClick={() => deleteItem(task)}
+                            />
+                          </div>
                         </td>
                       </tr>
                     ))
@@ -709,11 +744,11 @@ export default function Page() {
                         key={project.id}
                         className="border-t hover:bg-gray-50"
                       >
-                        <td className="px-6 py-5 font-semibold text-gray-900">
+                        <td className="px-6 py-5 font-semibold text-black">
                           {project.title}
                         </td>
 
-                        <td className="px-6 py-5 text-gray-800 font-medium">
+                        <td className="px-6 py-5 text-black font-medium">
                           {project.clientName}
                         </td>
 
@@ -725,16 +760,28 @@ export default function Page() {
                           <PriorityBadge priority={project.priority} />
                         </td>
 
-                        <td className="px-6 py-5 text-gray-700">
+                        <td className="px-6 py-5 text-black">
                           {project.deadline || "—"}
                         </td>
 
                         <td className="px-6 py-5">
-                          <ActionButtons
-                            onView={() => openDetailsModal(project)}
-                            onEdit={() => openEditModal(project)}
-                            onDelete={() => deleteItem(project)}
-                          />
+                          <div className="flex justify-end gap-2 flex-wrap">
+                            <ActionButton
+                              label="View"
+                              variant="view"
+                              onClick={() => openDetailsModal(project)}
+                            />
+                            <ActionButton
+                              label="Edit"
+                              variant="edit"
+                              onClick={() => openEditModal(project)}
+                            />
+                            <ActionButton
+                              label="Delete"
+                              variant="delete"
+                              onClick={() => deleteItem(project)}
+                            />
+                          </div>
                         </td>
                       </tr>
                     ))
@@ -793,11 +840,11 @@ export default function Page() {
                   ) : (
                     paginatedClients.map((client) => (
                       <tr key={client.id} className="border-t hover:bg-gray-50">
-                        <td className="px-6 py-5 font-semibold text-gray-900">
+                        <td className="px-6 py-5 font-semibold text-black">
                           {client.name}
                         </td>
 
-                        <td className="px-6 py-5 text-gray-800 font-medium">
+                        <td className="px-6 py-5 text-black font-medium">
                           {client.country}
                         </td>
 
@@ -805,16 +852,28 @@ export default function Page() {
                           <StatusBadge status={client.status} />
                         </td>
 
-                        <td className="px-6 py-5 text-gray-700">
+                        <td className="px-6 py-5 text-black">
                           {client.deadline || "—"}
                         </td>
 
                         <td className="px-6 py-5">
-                          <ActionButtons
-                            onView={() => openDetailsModal(client)}
-                            onEdit={() => openEditModal(client)}
-                            onDelete={() => deleteItem(client)}
-                          />
+                          <div className="flex justify-end gap-2 flex-wrap">
+                            <ActionButton
+                              label="View"
+                              variant="view"
+                              onClick={() => openDetailsModal(client)}
+                            />
+                            <ActionButton
+                              label="Edit"
+                              variant="edit"
+                              onClick={() => openEditModal(client)}
+                            />
+                            <ActionButton
+                              label="Delete"
+                              variant="delete"
+                              onClick={() => deleteItem(client)}
+                            />
+                          </div>
                         </td>
                       </tr>
                     ))
@@ -871,20 +930,32 @@ export default function Page() {
                   ) : (
                     paginatedNotes.map((note) => (
                       <tr key={note.id} className="border-t hover:bg-gray-50">
-                        <td className="px-6 py-5 font-semibold text-gray-900">
+                        <td className="px-6 py-5 font-semibold text-black">
                           {note.title}
                         </td>
 
-                        <td className="px-6 py-5 text-gray-700">
+                        <td className="px-6 py-5 text-black">
                           {note.createdAt}
                         </td>
 
                         <td className="px-6 py-5">
-                          <ActionButtons
-                            onView={() => openDetailsModal(note)}
-                            onEdit={() => openEditModal(note)}
-                            onDelete={() => deleteItem(note)}
-                          />
+                          <div className="flex justify-end gap-2 flex-wrap">
+                            <ActionButton
+                              label="View"
+                              variant="view"
+                              onClick={() => openDetailsModal(note)}
+                            />
+                            <ActionButton
+                              label="Edit"
+                              variant="edit"
+                              onClick={() => openEditModal(note)}
+                            />
+                            <ActionButton
+                              label="Delete"
+                              variant="delete"
+                              onClick={() => deleteItem(note)}
+                            />
+                          </div>
                         </td>
                       </tr>
                     ))
@@ -908,89 +979,205 @@ export default function Page() {
           </div>
         </section>
 
-        {/* ADD / EDIT MODAL */}
+        {/* ADD / EDIT / DETAILS MODAL */}
         <Modal
           open={modalOpen}
           title={
-            modalMode === "add"
-              ? `Add New ${selectedType}`
-              : `Edit ${selectedType}`
+            modalMode === "details"
+              ? `${selectedType} Details`
+              : modalMode === "edit"
+              ? `Edit ${selectedType}`
+              : `Add New ${selectedType}`
           }
           onClose={() => {
             setModalOpen(false);
             resetForm();
           }}
         >
-          <div className="space-y-6">
-            {/* Type Selector (only for Add) */}
-            {modalMode === "add" && (
+          {modalMode === "details" && selectedItem ? (
+            <div className="space-y-4 text-gray-900">
+              <p>
+                <span className="font-bold">Type:</span> {selectedItem.type}
+              </p>
+
+              {"title" in selectedItem && (
+                <p>
+                  <span className="font-bold">Title:</span> {selectedItem.title}
+                </p>
+              )}
+
+              {"name" in selectedItem && (
+                <p>
+                  <span className="font-bold">Client Name:</span>{" "}
+                  {selectedItem.name}
+                </p>
+              )}
+
+              {"country" in selectedItem && (
+                <p>
+                  <span className="font-bold">Country:</span>{" "}
+                  {selectedItem.country}
+                </p>
+              )}
+
+              {"clientName" in selectedItem && (
+                <p>
+                  <span className="font-bold">Client:</span>{" "}
+                  {selectedItem.clientName}
+                </p>
+              )}
+
+              {"projectTitle" in selectedItem && (
+                <p>
+                  <span className="font-bold">Project:</span>{" "}
+                  {selectedItem.projectTitle}
+                </p>
+              )}
+
+              {"status" in selectedItem && (
+                <p>
+                  <span className="font-bold">Status:</span>{" "}
+                  <StatusBadge status={selectedItem.status} />
+                </p>
+              )}
+
+              {"priority" in selectedItem && (
+                <p>
+                  <span className="font-bold">Priority:</span>{" "}
+                  <PriorityBadge priority={selectedItem.priority} />
+                </p>
+              )}
+
+              {"deadline" in selectedItem && (
+                <p>
+                  <span className="font-bold">Deadline:</span>{" "}
+                  {selectedItem.deadline || "—"}
+                </p>
+              )}
+
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Entry Type
-                </label>
-                <select
-                  value={selectedType}
-                  onChange={(e) =>
-                    setSelectedType(e.target.value as SectionType)
-                  }
-                  className="w-full p-3 border border-gray-300 rounded-2xl focus:outline-none focus:ring-2 focus:ring-cyan-500"
-                >
-                  <option value="Task">Task</option>
-                  <option value="Project">Project</option>
-                  <option value="Client">Client</option>
-                  <option value="Note">Note</option>
-                </select>
+                <p className="font-bold mb-1">Details:</p>
+                <p className="text-gray-800 whitespace-pre-wrap">
+                  {selectedItem.details}
+                </p>
               </div>
-            )}
-
-            {/* Client Fields */}
-            {selectedType === "Client" && (
-              <>
+            </div>
+          ) : (
+            <div className="space-y-6">
+              {/* Type selector (Add only) */}
+              {modalMode === "add" && (
                 <div>
-                  <label className="block text-sm font-medium mb-1">
-                    Client Name *
+                  <label className="block text-sm font-bold text-gray-900 mb-2">
+                    Entry Type
                   </label>
-                  <input
-                    type="text"
-                    value={formClientName}
-                    onChange={(e) => setFormClientName(e.target.value)}
-                    className="w-full p-3 border border-gray-300 rounded-2xl"
-                    placeholder="Client name"
-                  />
+                  <select
+                    value={selectedType}
+                    onChange={(e) =>
+                      setSelectedType(e.target.value as SectionType)
+                    }
+                    className="w-full p-3 border border-gray-300 rounded-2xl text-black"
+                  >
+                    <option value="Task">Task</option>
+                    <option value="Project">Project</option>
+                    <option value="Client">Client</option>
+                    <option value="Note">Note</option>
+                  </select>
                 </div>
+              )}
 
-                <div>
-                  <label className="block text-sm font-medium mb-1">
-                    Country *
-                  </label>
-                  <input
-                    type="text"
-                    value={formClientCountry}
-                    onChange={(e) => setFormClientCountry(e.target.value)}
-                    className="w-full p-3 border border-gray-300 rounded-2xl"
-                    placeholder="Country"
-                  />
-                </div>
-              </>
-            )}
+              {/* Client Fields */}
+              {selectedType === "Client" && (
+                <>
+                  <div>
+                    <label className="block text-sm font-bold text-gray-900 mb-2">
+                      Client Name *
+                    </label>
+                    <input
+                      type="text"
+                      value={formClientName}
+                      onChange={(e) => setFormClientName(e.target.value)}
+                      className="w-full p-3 border border-gray-300 rounded-2xl text-black"
+                      placeholder="Client name"
+                    />
+                  </div>
 
-            {/* Task & Project Fields */}
-            {(selectedType === "Task" || selectedType === "Project") && (
-              <>
+                  <div>
+                    <label className="block text-sm font-bold text-gray-900 mb-2">
+                      Country *
+                    </label>
+                    <input
+                      type="text"
+                      value={formClientCountry}
+                      onChange={(e) => setFormClientCountry(e.target.value)}
+                      className="w-full p-3 border border-gray-300 rounded-2xl text-black"
+                      placeholder="Country"
+                    />
+                  </div>
+                </>
+              )}
+
+              {/* Task / Project / Note Title */}
+              {(selectedType === "Task" ||
+                selectedType === "Project" ||
+                selectedType === "Note") && (
                 <div>
-                  <label className="block text-sm font-medium mb-1">
+                  <label className="block text-sm font-bold text-gray-900 mb-2">
                     Title *
                   </label>
                   <input
                     type="text"
                     value={formTitle}
                     onChange={(e) => setFormTitle(e.target.value)}
-                    className="w-full p-3 border border-gray-300 rounded-2xl"
+                    className="w-full p-3 border border-gray-300 rounded-2xl text-black"
                   />
                 </div>
+              )}
 
+              {/* Relations */}
+              {selectedType === "Project" && (
                 <div>
-                  <label className="block text-sm font-medium mb-1">
+                  <label className="block text-sm font-bold text-gray-900 mb-2">
+                    Client *
+                  </label>
+                  <select
+                    value={formSelectedClientId}
+                    onChange={(e) => setFormSelectedClientId(e.target.value)}
+                    className="w-full p-3 border border-gray-300 rounded-2xl text-black"
+                  >
+                    <option value="">Select a client</option>
+                    {clients.map((c) => (
+                      <option key={c.id} value={c.id}>
+                        {c.name} ({c.country})
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              )}
+
+              {selectedType === "Task" && (
+                <div>
+                  <label className="block text-sm font-bold text-gray-900 mb-2">
+                    Project *
+                  </label>
+                  <select
+                    value={formSelectedProjectId}
+                    onChange={(e) => setFormSelectedProjectId(e.target.value)}
+                    className="w-full p-3 border border-gray-300 rounded-2xl text-black"
+                  >
+                    <option value="">Select a project</option>
+                    {projects.map((p) => (
+                      <option key={p.id} value={p.id}>
+                        {p.title}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              )}
+
+              {/* Priority */}
+              {(selectedType === "Task" || selectedType === "Project") && (
+                <div>
+                  <label className="block text-sm font-bold text-gray-900 mb-2">
                     Priority
                   </label>
                   <select
@@ -1000,120 +1187,84 @@ export default function Page() {
                         e.target.value as "Low" | "Medium" | "High"
                       )
                     }
-                    className="w-full p-3 border border-gray-300 rounded-2xl"
+                    className="w-full p-3 border border-gray-300 rounded-2xl text-black"
                   >
                     <option value="Low">Low</option>
                     <option value="Medium">Medium</option>
                     <option value="High">High</option>
                   </select>
                 </div>
-              </>
-            )}
+              )}
 
-            {/* Status (except Notes) */}
-            {selectedType !== "Note" && (
+              {/* Status */}
+              {selectedType !== "Note" && (
+                <div>
+                  <label className="block text-sm font-bold text-gray-900 mb-2">
+                    Status
+                  </label>
+                  <select
+                    value={formStatus}
+                    onChange={(e) =>
+                      setFormStatus(e.target.value as StatusType)
+                    }
+                    className="w-full p-3 border border-gray-300 rounded-2xl text-black"
+                  >
+                    <option value="Pending">Pending</option>
+                    <option value="In Progress">In Progress</option>
+                    <option value="Completed">Completed</option>
+                    <option value="On Hold">On Hold</option>
+                  </select>
+                </div>
+              )}
+
+              {/* Details */}
               <div>
-                <label className="block text-sm font-medium mb-1">Status</label>
-                <select
-                  value={formStatus}
-                  onChange={(e) => setFormStatus(e.target.value as StatusType)}
-                  className="w-full p-3 border border-gray-300 rounded-2xl"
-                >
-                  <option value="Pending">Pending</option>
-                  <option value="In Progress">In Progress</option>
-                  <option value="Completed">Completed</option>
-                  <option value="On Hold">On Hold</option>
-                </select>
-              </div>
-            )}
-
-            {/* Common Fields */}
-            <div>
-              <label className="block text-sm font-medium mb-1">
-                Details *
-              </label>
-              <textarea
-                value={formDetails}
-                onChange={(e) => setFormDetails(e.target.value)}
-                rows={4}
-                className="w-full p-3 border border-gray-300 rounded-2xl"
-                placeholder="Enter details..."
-              />
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium mb-1">
-                Deadline (Optional)
-              </label>
-              <input
-                type="date"
-                value={formDeadline}
-                onChange={(e) => setFormDeadline(e.target.value)}
-                className="w-full p-3 border border-gray-300 rounded-2xl"
-              />
-            </div>
-
-            {/* Relations */}
-            {selectedType === "Project" && (
-              <div>
-                <label className="block text-sm font-medium mb-1">
-                  Client *
+                <label className="block text-sm font-bold text-gray-900 mb-2">
+                  Details *
                 </label>
-                <select
-                  value={formSelectedClientId}
-                  onChange={(e) => setFormSelectedClientId(e.target.value)}
-                  className="w-full p-3 border border-gray-300 rounded-2xl"
-                >
-                  <option value="">Select a client</option>
-                  {clients.map((c) => (
-                    <option key={c.id} value={c.id}>
-                      {c.name} ({c.country})
-                    </option>
-                  ))}
-                </select>
+                <textarea
+                  value={formDetails}
+                  onChange={(e) => setFormDetails(e.target.value)}
+                  rows={4}
+                  className="w-full p-3 border border-gray-300 rounded-2xl text-black"
+                  placeholder="Enter details..."
+                />
               </div>
-            )}
 
-            {selectedType === "Task" && (
+              {/* Deadline */}
               <div>
-                <label className="block text-sm font-medium mb-1">
-                  Project *
+                <label className="block text-sm font-bold text-gray-900 mb-2">
+                  Deadline (Optional)
                 </label>
-                <select
-                  value={formSelectedProjectId}
-                  onChange={(e) => setFormSelectedProjectId(e.target.value)}
-                  className="w-full p-3 border border-gray-300 rounded-2xl"
-                >
-                  <option value="">Select a project</option>
-                  {projects.map((p) => (
-                    <option key={p.id} value={p.id}>
-                      {p.title}
-                    </option>
-                  ))}
-                </select>
+                <input
+                  type="date"
+                  value={formDeadline}
+                  onChange={(e) => setFormDeadline(e.target.value)}
+                  className="w-full p-3 border border-gray-300 rounded-2xl text-black"
+                />
               </div>
-            )}
 
-            {/* Save Buttons */}
-            <div className="flex justify-end gap-3 pt-8 border-t mt-8">
-              <button
-                onClick={() => {
-                  setModalOpen(false);
-                  resetForm();
-                }}
-                className="px-6 py-3 rounded-2xl border border-gray-300 hover:bg-gray-50 transition"
-              >
-                Cancel
-              </button>
+              {/* Buttons */}
+              <div className="flex justify-end gap-3 pt-8 border-t mt-8">
+                <button
+                  onClick={() => {
+                    setModalOpen(false);
+                    resetForm();
+                  }}
+                  className="px-6 py-3 rounded-2xl border border-gray-300 hover:bg-gray-50 transition font-bold"
+                >
+                  Cancel
+                </button>
 
-              <button
-                onClick={handleSave}
-                className="px-8 py-3 bg-cyan-900 hover:bg-cyan-800 text-white font-semibold rounded-2xl transition"
-              >
-                {modalMode === "edit" ? "Update Entry" : "Save Entry"}
-              </button>
+                <button
+                  onClick={handleSave}
+                  className="px-8 py-3 bg-cyan-900 hover:bg-cyan-800 text-white font-bold rounded-2xl transition"
+                >
+                  {modalMode === "edit" ? "Update Entry" : "Save Entry"}
+                </button>
+              </div>
             </div>
-          </div>
+          )}
         </Modal>
       </main>
 
