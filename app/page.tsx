@@ -1,38 +1,57 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import Header from "@/app/components/Header";
 import Footer from "@/app/components/Footer";
 
-type ItemStatus = "Pending" | "In Progress" | "Completed" | "On Hold";
+type SectionType = "Task" | "Project" | "Client" | "Note";
 
-type BaseItem = {
-  id: number;
+type StatusType = "Pending" | "In Progress" | "Completed" | "On Hold";
+
+type TaskProjectItem = {
+  id: string;
+  type: "Task" | "Project";
   title: string;
-  status: ItemStatus;
-  createdAt: string;
-  details: string;
+  status: StatusType;
   priority: "Low" | "Medium" | "High";
+  createdAt: string;
+  deadline?: string;
+  details: string;
 };
 
 type ClientItem = {
-  id: number;
+  id: string;
+  type: "Client";
   name: string;
-  status: ItemStatus;
-  createdAt: string;
-  details: string;
   project: string;
   country: string;
+  status: StatusType;
+  createdAt: string;
+  deadline?: string;
+  details: string;
 };
 
 type NoteItem = {
-  id: number;
+  id: string;
+  type: "Note";
   title: string;
   createdAt: string;
   details: string;
 };
 
-function StatusBadge({ status }: { status: ItemStatus }) {
+type AnyItem = TaskProjectItem | ClientItem | NoteItem;
+
+const STORAGE_KEY = "talha-diary-data-v1";
+
+function generateId() {
+  return `${Date.now()}-${Math.floor(Math.random() * 99999)}`;
+}
+
+function formatDate(date: Date) {
+  return date.toISOString().split("T")[0];
+}
+
+function StatusBadge({ status }: { status: StatusType }) {
   const styles =
     status === "Completed"
       ? "bg-green-100 text-green-800"
@@ -43,15 +62,17 @@ function StatusBadge({ status }: { status: ItemStatus }) {
       : "bg-gray-200 text-gray-800";
 
   return (
-    <span
-      className={`px-3 py-1 rounded-full text-xs font-semibold ${styles}`}
-    >
+    <span className={`px-3 py-1 rounded-full text-xs font-semibold ${styles}`}>
       {status}
     </span>
   );
 }
 
-function PriorityBadge({ priority }: { priority: "Low" | "Medium" | "High" }) {
+function PriorityBadge({
+  priority,
+}: {
+  priority: "Low" | "Medium" | "High";
+}) {
   const styles =
     priority === "High"
       ? "bg-red-100 text-red-800"
@@ -60,11 +81,42 @@ function PriorityBadge({ priority }: { priority: "Low" | "Medium" | "High" }) {
       : "bg-emerald-100 text-emerald-800";
 
   return (
-    <span
-      className={`px-3 py-1 rounded-full text-xs font-semibold ${styles}`}
-    >
+    <span className={`px-3 py-1 rounded-full text-xs font-semibold ${styles}`}>
       {priority}
     </span>
+  );
+}
+
+function Modal({
+  open,
+  title,
+  children,
+  onClose,
+}: {
+  open: boolean;
+  title: string;
+  children: React.ReactNode;
+  onClose: () => void;
+}) {
+  if (!open) return null;
+
+  return (
+    <div className="fixed inset-0 bg-black/60 flex items-center justify-center px-4 z-50">
+      <div className="bg-white w-full max-w-3xl rounded-3xl shadow-2xl overflow-hidden">
+        <div className="flex items-center justify-between px-6 py-5 bg-gradient-to-r from-cyan-900 via-blue-900 to-cyan-800 text-white">
+          <h3 className="text-lg md:text-xl font-extrabold">{title}</h3>
+
+          <button
+            onClick={onClose}
+            className="bg-white text-cyan-900 font-bold px-4 py-2 rounded-xl shadow hover:bg-gray-100 transition"
+          >
+            Close
+          </button>
+        </div>
+
+        <div className="p-6">{children}</div>
+      </div>
+    </div>
   );
 }
 
@@ -105,172 +157,13 @@ function Pagination({
   );
 }
 
-function Modal({
-  open,
-  onClose,
-  title,
-  children,
-}: {
-  open: boolean;
-  onClose: () => void;
-  title: string;
-  children: React.ReactNode;
-}) {
-  if (!open) return null;
-
-  return (
-    <div className="fixed inset-0 bg-black/60 flex items-center justify-center px-4 z-50">
-      <div className="bg-white w-full max-w-2xl rounded-3xl shadow-2xl overflow-hidden">
-        <div className="flex items-center justify-between px-6 py-5 bg-gradient-to-r from-cyan-900 via-blue-900 to-cyan-800 text-white">
-          <h3 className="text-lg md:text-xl font-extrabold">{title}</h3>
-
-          <button
-            onClick={onClose}
-            className="bg-white text-cyan-900 font-bold px-4 py-2 rounded-xl shadow hover:bg-gray-100 transition"
-          >
-            Close
-          </button>
-        </div>
-
-        <div className="p-6 text-gray-800 leading-relaxed">{children}</div>
-      </div>
-    </div>
-  );
-}
-
 export default function Page() {
-  const tasks: BaseItem[] = [
-    {
-      id: 1,
-      title: "Finalize new client onboarding plan",
-      status: "In Progress",
-      createdAt: "2026-04-05",
-      priority: "High",
-      details:
-        "Need to finalize onboarding workflow for new leads. Include proposal, pricing model, NDA, onboarding email, and follow-up reminders.",
-    },
-    {
-      id: 2,
-      title: "Publish LinkedIn post about EvoDynamics Vision case studies",
-      status: "Pending",
-      createdAt: "2026-04-04",
-      priority: "Medium",
-      details:
-        "Draft post with storytelling style, include 2 case studies + CTA to website. Schedule at evening time.",
-    },
-    {
-      id: 3,
-      title: "Review Vercel deployment and optimize build time",
-      status: "Pending",
-      createdAt: "2026-04-02",
-      priority: "Low",
-      details:
-        "Check unused packages, remove dead imports, verify image optimization and caching strategy.",
-    },
-    {
-      id: 4,
-      title: "Follow up with Australian client",
-      status: "On Hold",
-      createdAt: "2026-04-01",
-      priority: "High",
-      details:
-        "Send reminder and request remaining portal requirements + branding assets. Confirm timeline and payment terms.",
-    },
-  ];
+  const [tasks, setTasks] = useState<TaskProjectItem[]>([]);
+  const [projects, setProjects] = useState<TaskProjectItem[]>([]);
+  const [clients, setClients] = useState<ClientItem[]>([]);
+  const [notes, setNotes] = useState<NoteItem[]>([]);
 
-  const projects: BaseItem[] = [
-    {
-      id: 1,
-      title: "Talha’s Diary Tracker (Personal)",
-      status: "In Progress",
-      createdAt: "2026-04-06",
-      priority: "High",
-      details:
-        "Single-page portal with sections (Tasks, Projects, Clients, Notes) + modal-based details + pagination.",
-    },
-    {
-      id: 2,
-      title: "BuyNClose Portal",
-      status: "In Progress",
-      createdAt: "2026-03-15",
-      priority: "High",
-      details:
-        "Real estate platform with learning portal + AI automation support. Need to finalize Dialogflow integration approach.",
-    },
-    {
-      id: 3,
-      title: "Premier Auto Plus Website Updates",
-      status: "In Progress",
-      createdAt: "2026-03-20",
-      priority: "Medium",
-      details:
-        "Convert slide-style content into clean sections, implement John's feedback, improve CTA structure.",
-    },
-  ];
-
-  const clients: ClientItem[] = [
-    {
-      id: 1,
-      name: "Australian Business Client",
-      project: "Next.js Landing Page",
-      country: "Australia",
-      status: "In Progress",
-      createdAt: "2026-04-05",
-      details:
-        "Landing page with lead capture form, database integration, and modern responsive UI. Quoted $200 initial scope.",
-    },
-    {
-      id: 2,
-      name: "US Real Estate Client",
-      project: "Monthly Retainer Services",
-      country: "United States",
-      status: "Pending",
-      createdAt: "2026-03-29",
-      details:
-        "Potential retainer for website maintenance, app dev, and social media marketing. Need final negotiation.",
-    },
-    {
-      id: 3,
-      name: "Islamic University Project Client",
-      project: "University Management System",
-      country: "Pakistan",
-      status: "On Hold",
-      createdAt: "2026-03-10",
-      details:
-        "Scope defined in PKR. Pending approval and final agreement terms.",
-    },
-  ];
-
-  const notes: NoteItem[] = [
-    {
-      id: 1,
-      title: "Daily Reminder",
-      createdAt: "2026-04-06",
-      details:
-        "Don’t overload yourself. Finish top 3 priorities only. Let the rest roll to tomorrow.",
-    },
-    {
-      id: 2,
-      title: "Marketing Idea",
-      createdAt: "2026-04-05",
-      details:
-        "Case studies should feel like storytelling. Add dialogues + bottlenecks + final measurable outcomes.",
-    },
-    {
-      id: 3,
-      title: "Fitness Focus",
-      createdAt: "2026-04-04",
-      details:
-        "Need to control fatigue and screen time. Add a daily break reminder feature inside the tracker.",
-    },
-  ];
-
-  const [selectedItem, setSelectedItem] = useState<
-    BaseItem | ClientItem | NoteItem | null
-  >(null);
-
-  const [modalOpen, setModalOpen] = useState(false);
-
+  // pagination states
   const [taskPage, setTaskPage] = useState(1);
   const [projectPage, setProjectPage] = useState(1);
   const [clientPage, setClientPage] = useState(1);
@@ -278,64 +171,349 @@ export default function Page() {
 
   const itemsPerPage = 5;
 
-  function openDetails(item: any) {
-    setSelectedItem(item);
+  // modal states
+  const [modalOpen, setModalOpen] = useState(false);
+  const [modalMode, setModalMode] = useState<"add" | "edit" | "details">("add");
+  const [selectedType, setSelectedType] = useState<SectionType>("Task");
+  const [selectedItem, setSelectedItem] = useState<AnyItem | null>(null);
+
+  // form states
+  const [formTitle, setFormTitle] = useState("");
+  const [formDetails, setFormDetails] = useState("");
+  const [formStatus, setFormStatus] = useState<StatusType>("Pending");
+  const [formPriority, setFormPriority] = useState<"Low" | "Medium" | "High">(
+    "Medium"
+  );
+  const [formDeadline, setFormDeadline] = useState("");
+
+  const [formClientName, setFormClientName] = useState("");
+  const [formClientProject, setFormClientProject] = useState("");
+  const [formClientCountry, setFormClientCountry] = useState("");
+
+  // Load from localStorage
+  useEffect(() => {
+    const stored = localStorage.getItem(STORAGE_KEY);
+
+    if (stored) {
+      const parsed = JSON.parse(stored);
+
+      setTasks(parsed.tasks || []);
+      setProjects(parsed.projects || []);
+      setClients(parsed.clients || []);
+      setNotes(parsed.notes || []);
+    }
+  }, []);
+
+  // Save to localStorage
+  useEffect(() => {
+    localStorage.setItem(
+      STORAGE_KEY,
+      JSON.stringify({
+        tasks,
+        projects,
+        clients,
+        notes,
+      })
+    );
+  }, [tasks, projects, clients, notes]);
+
+  function resetForm() {
+    setFormTitle("");
+    setFormDetails("");
+    setFormStatus("Pending");
+    setFormPriority("Medium");
+    setFormDeadline("");
+
+    setFormClientName("");
+    setFormClientProject("");
+    setFormClientCountry("");
+  }
+
+  function openAddModal() {
+    resetForm();
+    setSelectedItem(null);
+    setModalMode("add");
+    setSelectedType("Task");
     setModalOpen(true);
   }
 
-  function closeModal() {
-    setSelectedItem(null);
-    setModalOpen(false);
+  function openDetailsModal(item: AnyItem) {
+    setSelectedItem(item);
+    setModalMode("details");
+    setModalOpen(true);
   }
 
-  const paginatedTasks = useMemo(() => {
-    const start = (taskPage - 1) * itemsPerPage;
-    return tasks.slice(start, start + itemsPerPage);
-  }, [taskPage]);
+  function openEditModal(item: AnyItem) {
+    setSelectedItem(item);
+    setModalMode("edit");
+    setModalOpen(true);
 
-  const paginatedProjects = useMemo(() => {
-    const start = (projectPage - 1) * itemsPerPage;
-    return projects.slice(start, start + itemsPerPage);
-  }, [projectPage]);
+    if (item.type === "Task" || item.type === "Project") {
+      setSelectedType(item.type);
+      setFormTitle(item.title);
+      setFormDetails(item.details);
+      setFormStatus(item.status);
+      setFormPriority(item.priority);
+      setFormDeadline(item.deadline || "");
+    }
 
-  const paginatedClients = useMemo(() => {
-    const start = (clientPage - 1) * itemsPerPage;
-    return clients.slice(start, start + itemsPerPage);
-  }, [clientPage]);
+    if (item.type === "Client") {
+      setSelectedType("Client");
+      setFormClientName(item.name);
+      setFormClientProject(item.project);
+      setFormClientCountry(item.country);
+      setFormDetails(item.details);
+      setFormStatus(item.status);
+      setFormDeadline(item.deadline || "");
+    }
 
-  const paginatedNotes = useMemo(() => {
-    const start = (notePage - 1) * itemsPerPage;
-    return notes.slice(start, start + itemsPerPage);
-  }, [notePage]);
+    if (item.type === "Note") {
+      setSelectedType("Note");
+      setFormTitle(item.title);
+      setFormDetails(item.details);
+    }
+  }
 
-  const totalTaskPages = Math.ceil(tasks.length / itemsPerPage);
-  const totalProjectPages = Math.ceil(projects.length / itemsPerPage);
-  const totalClientPages = Math.ceil(clients.length / itemsPerPage);
-  const totalNotePages = Math.ceil(notes.length / itemsPerPage);
+  function deleteItem(item: AnyItem) {
+    const confirmDelete = confirm(
+      `Are you sure you want to delete this ${item.type}?`
+    );
+
+    if (!confirmDelete) return;
+
+    if (item.type === "Task") {
+      setTasks((prev) => prev.filter((x) => x.id !== item.id));
+    } else if (item.type === "Project") {
+      setProjects((prev) => prev.filter((x) => x.id !== item.id));
+    } else if (item.type === "Client") {
+      setClients((prev) => prev.filter((x) => x.id !== item.id));
+    } else if (item.type === "Note") {
+      setNotes((prev) => prev.filter((x) => x.id !== item.id));
+    }
+  }
+
+  function handleSave() {
+    // ADD MODE
+    if (modalMode === "add") {
+      if (selectedType === "Task" || selectedType === "Project") {
+        if (!formTitle.trim()) return alert("Title is required.");
+        if (!formDetails.trim()) return alert("Details are required.");
+
+        const newItem: TaskProjectItem = {
+          id: generateId(),
+          type: selectedType,
+          title: formTitle,
+          details: formDetails,
+          status: formStatus,
+          priority: formPriority,
+          createdAt: formatDate(new Date()),
+          deadline: formDeadline || undefined,
+        };
+
+        if (selectedType === "Task") setTasks((prev) => [newItem, ...prev]);
+        if (selectedType === "Project")
+          setProjects((prev) => [newItem, ...prev]);
+
+        setModalOpen(false);
+        resetForm();
+        return;
+      }
+
+      if (selectedType === "Client") {
+        if (!formClientName.trim()) return alert("Client name is required.");
+        if (!formClientProject.trim()) return alert("Project is required.");
+        if (!formClientCountry.trim()) return alert("Country is required.");
+        if (!formDetails.trim()) return alert("Details are required.");
+
+        const newClient: ClientItem = {
+          id: generateId(),
+          type: "Client",
+          name: formClientName,
+          project: formClientProject,
+          country: formClientCountry,
+          status: formStatus,
+          details: formDetails,
+          createdAt: formatDate(new Date()),
+          deadline: formDeadline || undefined,
+        };
+
+        setClients((prev) => [newClient, ...prev]);
+        setModalOpen(false);
+        resetForm();
+        return;
+      }
+
+      if (selectedType === "Note") {
+        if (!formTitle.trim()) return alert("Note title is required.");
+        if (!formDetails.trim()) return alert("Details are required.");
+
+        const newNote: NoteItem = {
+          id: generateId(),
+          type: "Note",
+          title: formTitle,
+          details: formDetails,
+          createdAt: formatDate(new Date()),
+        };
+
+        setNotes((prev) => [newNote, ...prev]);
+        setModalOpen(false);
+        resetForm();
+        return;
+      }
+    }
+
+    // EDIT MODE
+    if (modalMode === "edit" && selectedItem) {
+      if (selectedItem.type === "Task" || selectedItem.type === "Project") {
+        if (!formTitle.trim()) return alert("Title is required.");
+        if (!formDetails.trim()) return alert("Details are required.");
+
+        const updated: TaskProjectItem = {
+          ...selectedItem,
+          title: formTitle,
+          details: formDetails,
+          status: formStatus,
+          priority: formPriority,
+          deadline: formDeadline || undefined,
+        };
+
+        if (selectedItem.type === "Task") {
+          setTasks((prev) => prev.map((x) => (x.id === updated.id ? updated : x)));
+        }
+
+        if (selectedItem.type === "Project") {
+          setProjects((prev) =>
+            prev.map((x) => (x.id === updated.id ? updated : x))
+          );
+        }
+
+        setModalOpen(false);
+        resetForm();
+        return;
+      }
+
+      if (selectedItem.type === "Client") {
+        if (!formClientName.trim()) return alert("Client name is required.");
+        if (!formClientProject.trim()) return alert("Project is required.");
+        if (!formClientCountry.trim()) return alert("Country is required.");
+        if (!formDetails.trim()) return alert("Details are required.");
+
+        const updated: ClientItem = {
+          ...selectedItem,
+          name: formClientName,
+          project: formClientProject,
+          country: formClientCountry,
+          status: formStatus,
+          details: formDetails,
+          deadline: formDeadline || undefined,
+        };
+
+        setClients((prev) => prev.map((x) => (x.id === updated.id ? updated : x)));
+        setModalOpen(false);
+        resetForm();
+        return;
+      }
+
+      if (selectedItem.type === "Note") {
+        if (!formTitle.trim()) return alert("Title is required.");
+        if (!formDetails.trim()) return alert("Details are required.");
+
+        const updated: NoteItem = {
+          ...selectedItem,
+          title: formTitle,
+          details: formDetails,
+        };
+
+        setNotes((prev) => prev.map((x) => (x.id === updated.id ? updated : x)));
+        setModalOpen(false);
+        resetForm();
+        return;
+      }
+    }
+  }
+
+  // pagination helper
+  function paginate<T>(items: T[], page: number) {
+    const start = (page - 1) * itemsPerPage;
+    return items.slice(start, start + itemsPerPage);
+  }
+
+  const paginatedTasks = useMemo(
+    () => paginate(tasks, taskPage),
+    [tasks, taskPage]
+  );
+
+  const paginatedProjects = useMemo(
+    () => paginate(projects, projectPage),
+    [projects, projectPage]
+  );
+
+  const paginatedClients = useMemo(
+    () => paginate(clients, clientPage),
+    [clients, clientPage]
+  );
+
+  const paginatedNotes = useMemo(
+    () => paginate(notes, notePage),
+    [notes, notePage]
+  );
+
+  const totalTaskPages = Math.max(1, Math.ceil(tasks.length / itemsPerPage));
+  const totalProjectPages = Math.max(
+    1,
+    Math.ceil(projects.length / itemsPerPage)
+  );
+  const totalClientPages = Math.max(
+    1,
+    Math.ceil(clients.length / itemsPerPage)
+  );
+  const totalNotePages = Math.max(1, Math.ceil(notes.length / itemsPerPage));
 
   return (
     <>
       <Header />
 
-      <main className="container mx-auto px-6 py-14 max-w-6xl space-y-20">
+      <main className="container mx-auto px-6 py-12 max-w-6xl space-y-16">
         {/* HERO */}
-        <section className="text-center">
-          <h1 className="text-4xl md:text-5xl font-extrabold text-cyan-900 mb-5">
-            Welcome Back, Talha 👋
-          </h1>
-          <p className="text-gray-700 text-lg md:text-xl max-w-3xl mx-auto leading-relaxed">
-            This is your personal execution dashboard. Track tasks, projects,
-            clients, and notes in one place — clean, simple, and fast.
-          </p>
+        <section className="bg-white rounded-3xl shadow-xl border overflow-hidden">
+          <div className="bg-gradient-to-r from-cyan-900 via-blue-900 to-cyan-800 px-8 py-10 text-white">
+            <h1 className="text-3xl md:text-5xl font-extrabold">
+              Talha&apos;s Diary Dashboard
+            </h1>
+            <p className="text-cyan-100 mt-3 max-w-3xl leading-relaxed">
+              Your personal tracker for tasks, clients, projects, and notes.
+              Everything stays saved on your device automatically.
+            </p>
+
+            <div className="mt-7">
+              <button
+                onClick={openAddModal}
+                className="bg-white text-cyan-900 font-bold px-7 py-3 rounded-2xl shadow-lg hover:bg-gray-100 transition"
+              >
+                + Add New Entry
+              </button>
+            </div>
+          </div>
+
+          <div className="px-8 py-6 text-gray-700 text-sm md:text-base">
+            <p>
+              <span className="font-bold text-cyan-900">Quick Tip:</span> Use the
+              navigation menu to scroll instantly between Tasks, Projects,
+              Clients and Notes.
+            </p>
+          </div>
         </section>
 
         {/* TASKS */}
         <section id="tasks" className="scroll-mt-32">
-          <h2 className="text-3xl font-extrabold text-cyan-900 mb-6">
-            Tasks
-          </h2>
+          <div className="flex items-center justify-between mb-6 flex-wrap gap-3">
+            <h2 className="text-3xl font-extrabold text-cyan-900">Tasks</h2>
+            <p className="text-gray-600 font-medium">
+              Total: <span className="font-bold">{tasks.length}</span>
+            </p>
+          </div>
 
-          <div className="bg-white rounded-3xl shadow-xl overflow-hidden border">
+          <div className="bg-white rounded-3xl shadow-xl border overflow-hidden">
             <div className="overflow-x-auto">
               <table className="w-full text-left">
                 <thead className="bg-gray-100 text-gray-700 text-sm">
@@ -343,39 +521,67 @@ export default function Page() {
                     <th className="px-6 py-4 font-bold">Title</th>
                     <th className="px-6 py-4 font-bold">Status</th>
                     <th className="px-6 py-4 font-bold">Priority</th>
-                    <th className="px-6 py-4 font-bold">Created</th>
-                    <th className="px-6 py-4 font-bold text-right">Action</th>
+                    <th className="px-6 py-4 font-bold">Deadline</th>
+                    <th className="px-6 py-4 font-bold text-right">Actions</th>
                   </tr>
                 </thead>
 
                 <tbody>
-                  {paginatedTasks.map((task) => (
-                    <tr
-                      key={task.id}
-                      className="border-t hover:bg-gray-50 transition"
-                    >
-                      <td className="px-6 py-5 font-semibold text-gray-900">
-                        {task.title}
-                      </td>
-                      <td className="px-6 py-5">
-                        <StatusBadge status={task.status} />
-                      </td>
-                      <td className="px-6 py-5">
-                        <PriorityBadge priority={task.priority} />
-                      </td>
-                      <td className="px-6 py-5 text-gray-600">
-                        {task.createdAt}
-                      </td>
-                      <td className="px-6 py-5 text-right">
-                        <button
-                          onClick={() => openDetails(task)}
-                          className="px-5 py-2 rounded-xl bg-cyan-900 text-white font-semibold shadow hover:bg-cyan-800 transition"
-                        >
-                          Details
-                        </button>
+                  {paginatedTasks.length === 0 ? (
+                    <tr>
+                      <td className="px-6 py-6 text-gray-600" colSpan={5}>
+                        No tasks yet. Add your first task.
                       </td>
                     </tr>
-                  ))}
+                  ) : (
+                    paginatedTasks.map((task) => (
+                      <tr
+                        key={task.id}
+                        className="border-t hover:bg-gray-50 transition"
+                      >
+                        <td className="px-6 py-5 font-semibold text-gray-900">
+                          {task.title}
+                        </td>
+
+                        <td className="px-6 py-5">
+                          <StatusBadge status={task.status} />
+                        </td>
+
+                        <td className="px-6 py-5">
+                          <PriorityBadge priority={task.priority} />
+                        </td>
+
+                        <td className="px-6 py-5 text-gray-700">
+                          {task.deadline || "—"}
+                        </td>
+
+                        <td className="px-6 py-5">
+                          <div className="flex justify-end gap-2 flex-wrap">
+                            <button
+                              onClick={() => openDetailsModal(task)}
+                              className="px-4 py-2 rounded-xl bg-blue-600 text-white font-semibold hover:bg-blue-500 transition"
+                            >
+                              Details
+                            </button>
+
+                            <button
+                              onClick={() => openEditModal(task)}
+                              className="px-4 py-2 rounded-xl bg-cyan-900 text-white font-semibold hover:bg-cyan-800 transition"
+                            >
+                              Edit
+                            </button>
+
+                            <button
+                              onClick={() => deleteItem(task)}
+                              className="px-4 py-2 rounded-xl bg-red-600 text-white font-semibold hover:bg-red-500 transition"
+                            >
+                              Delete
+                            </button>
+                          </div>
+                        </td>
+                      </tr>
+                    ))
+                  )}
                 </tbody>
               </table>
             </div>
@@ -395,11 +601,14 @@ export default function Page() {
 
         {/* PROJECTS */}
         <section id="projects" className="scroll-mt-32">
-          <h2 className="text-3xl font-extrabold text-cyan-900 mb-6">
-            Projects
-          </h2>
+          <div className="flex items-center justify-between mb-6 flex-wrap gap-3">
+            <h2 className="text-3xl font-extrabold text-cyan-900">Projects</h2>
+            <p className="text-gray-600 font-medium">
+              Total: <span className="font-bold">{projects.length}</span>
+            </p>
+          </div>
 
-          <div className="bg-white rounded-3xl shadow-xl overflow-hidden border">
+          <div className="bg-white rounded-3xl shadow-xl border overflow-hidden">
             <div className="overflow-x-auto">
               <table className="w-full text-left">
                 <thead className="bg-gray-100 text-gray-700 text-sm">
@@ -407,39 +616,67 @@ export default function Page() {
                     <th className="px-6 py-4 font-bold">Project</th>
                     <th className="px-6 py-4 font-bold">Status</th>
                     <th className="px-6 py-4 font-bold">Priority</th>
-                    <th className="px-6 py-4 font-bold">Created</th>
-                    <th className="px-6 py-4 font-bold text-right">Action</th>
+                    <th className="px-6 py-4 font-bold">Deadline</th>
+                    <th className="px-6 py-4 font-bold text-right">Actions</th>
                   </tr>
                 </thead>
 
                 <tbody>
-                  {paginatedProjects.map((project) => (
-                    <tr
-                      key={project.id}
-                      className="border-t hover:bg-gray-50 transition"
-                    >
-                      <td className="px-6 py-5 font-semibold text-gray-900">
-                        {project.title}
-                      </td>
-                      <td className="px-6 py-5">
-                        <StatusBadge status={project.status} />
-                      </td>
-                      <td className="px-6 py-5">
-                        <PriorityBadge priority={project.priority} />
-                      </td>
-                      <td className="px-6 py-5 text-gray-600">
-                        {project.createdAt}
-                      </td>
-                      <td className="px-6 py-5 text-right">
-                        <button
-                          onClick={() => openDetails(project)}
-                          className="px-5 py-2 rounded-xl bg-cyan-900 text-white font-semibold shadow hover:bg-cyan-800 transition"
-                        >
-                          Details
-                        </button>
+                  {paginatedProjects.length === 0 ? (
+                    <tr>
+                      <td className="px-6 py-6 text-gray-600" colSpan={5}>
+                        No projects yet. Add your first project.
                       </td>
                     </tr>
-                  ))}
+                  ) : (
+                    paginatedProjects.map((project) => (
+                      <tr
+                        key={project.id}
+                        className="border-t hover:bg-gray-50 transition"
+                      >
+                        <td className="px-6 py-5 font-semibold text-gray-900">
+                          {project.title}
+                        </td>
+
+                        <td className="px-6 py-5">
+                          <StatusBadge status={project.status} />
+                        </td>
+
+                        <td className="px-6 py-5">
+                          <PriorityBadge priority={project.priority} />
+                        </td>
+
+                        <td className="px-6 py-5 text-gray-700">
+                          {project.deadline || "—"}
+                        </td>
+
+                        <td className="px-6 py-5">
+                          <div className="flex justify-end gap-2 flex-wrap">
+                            <button
+                              onClick={() => openDetailsModal(project)}
+                              className="px-4 py-2 rounded-xl bg-blue-600 text-white font-semibold hover:bg-blue-500 transition"
+                            >
+                              Details
+                            </button>
+
+                            <button
+                              onClick={() => openEditModal(project)}
+                              className="px-4 py-2 rounded-xl bg-cyan-900 text-white font-semibold hover:bg-cyan-800 transition"
+                            >
+                              Edit
+                            </button>
+
+                            <button
+                              onClick={() => deleteItem(project)}
+                              className="px-4 py-2 rounded-xl bg-red-600 text-white font-semibold hover:bg-red-500 transition"
+                            >
+                              Delete
+                            </button>
+                          </div>
+                        </td>
+                      </tr>
+                    ))
+                  )}
                 </tbody>
               </table>
             </div>
@@ -459,11 +696,14 @@ export default function Page() {
 
         {/* CLIENTS */}
         <section id="clients" className="scroll-mt-32">
-          <h2 className="text-3xl font-extrabold text-cyan-900 mb-6">
-            Clients
-          </h2>
+          <div className="flex items-center justify-between mb-6 flex-wrap gap-3">
+            <h2 className="text-3xl font-extrabold text-cyan-900">Clients</h2>
+            <p className="text-gray-600 font-medium">
+              Total: <span className="font-bold">{clients.length}</span>
+            </p>
+          </div>
 
-          <div className="bg-white rounded-3xl shadow-xl overflow-hidden border">
+          <div className="bg-white rounded-3xl shadow-xl border overflow-hidden">
             <div className="overflow-x-auto">
               <table className="w-full text-left">
                 <thead className="bg-gray-100 text-gray-700 text-sm">
@@ -472,38 +712,66 @@ export default function Page() {
                     <th className="px-6 py-4 font-bold">Project</th>
                     <th className="px-6 py-4 font-bold">Country</th>
                     <th className="px-6 py-4 font-bold">Status</th>
-                    <th className="px-6 py-4 font-bold text-right">Action</th>
+                    <th className="px-6 py-4 font-bold text-right">Actions</th>
                   </tr>
                 </thead>
 
                 <tbody>
-                  {paginatedClients.map((client) => (
-                    <tr
-                      key={client.id}
-                      className="border-t hover:bg-gray-50 transition"
-                    >
-                      <td className="px-6 py-5 font-semibold text-gray-900">
-                        {client.name}
-                      </td>
-                      <td className="px-6 py-5 text-gray-700">
-                        {client.project}
-                      </td>
-                      <td className="px-6 py-5 text-gray-700">
-                        {client.country}
-                      </td>
-                      <td className="px-6 py-5">
-                        <StatusBadge status={client.status} />
-                      </td>
-                      <td className="px-6 py-5 text-right">
-                        <button
-                          onClick={() => openDetails(client)}
-                          className="px-5 py-2 rounded-xl bg-cyan-900 text-white font-semibold shadow hover:bg-cyan-800 transition"
-                        >
-                          Details
-                        </button>
+                  {paginatedClients.length === 0 ? (
+                    <tr>
+                      <td className="px-6 py-6 text-gray-600" colSpan={5}>
+                        No clients yet. Add your first client.
                       </td>
                     </tr>
-                  ))}
+                  ) : (
+                    paginatedClients.map((client) => (
+                      <tr
+                        key={client.id}
+                        className="border-t hover:bg-gray-50 transition"
+                      >
+                        <td className="px-6 py-5 font-semibold text-gray-900">
+                          {client.name}
+                        </td>
+
+                        <td className="px-6 py-5 text-gray-700">
+                          {client.project}
+                        </td>
+
+                        <td className="px-6 py-5 text-gray-700">
+                          {client.country}
+                        </td>
+
+                        <td className="px-6 py-5">
+                          <StatusBadge status={client.status} />
+                        </td>
+
+                        <td className="px-6 py-5">
+                          <div className="flex justify-end gap-2 flex-wrap">
+                            <button
+                              onClick={() => openDetailsModal(client)}
+                              className="px-4 py-2 rounded-xl bg-blue-600 text-white font-semibold hover:bg-blue-500 transition"
+                            >
+                              Details
+                            </button>
+
+                            <button
+                              onClick={() => openEditModal(client)}
+                              className="px-4 py-2 rounded-xl bg-cyan-900 text-white font-semibold hover:bg-cyan-800 transition"
+                            >
+                              Edit
+                            </button>
+
+                            <button
+                              onClick={() => deleteItem(client)}
+                              className="px-4 py-2 rounded-xl bg-red-600 text-white font-semibold hover:bg-red-500 transition"
+                            >
+                              Delete
+                            </button>
+                          </div>
+                        </td>
+                      </tr>
+                    ))
+                  )}
                 </tbody>
               </table>
             </div>
@@ -523,43 +791,72 @@ export default function Page() {
 
         {/* NOTES */}
         <section id="notes" className="scroll-mt-32">
-          <h2 className="text-3xl font-extrabold text-cyan-900 mb-6">
-            Notes
-          </h2>
+          <div className="flex items-center justify-between mb-6 flex-wrap gap-3">
+            <h2 className="text-3xl font-extrabold text-cyan-900">Notes</h2>
+            <p className="text-gray-600 font-medium">
+              Total: <span className="font-bold">{notes.length}</span>
+            </p>
+          </div>
 
-          <div className="bg-white rounded-3xl shadow-xl overflow-hidden border">
+          <div className="bg-white rounded-3xl shadow-xl border overflow-hidden">
             <div className="overflow-x-auto">
               <table className="w-full text-left">
                 <thead className="bg-gray-100 text-gray-700 text-sm">
                   <tr>
                     <th className="px-6 py-4 font-bold">Title</th>
                     <th className="px-6 py-4 font-bold">Created</th>
-                    <th className="px-6 py-4 font-bold text-right">Action</th>
+                    <th className="px-6 py-4 font-bold text-right">Actions</th>
                   </tr>
                 </thead>
 
                 <tbody>
-                  {paginatedNotes.map((note) => (
-                    <tr
-                      key={note.id}
-                      className="border-t hover:bg-gray-50 transition"
-                    >
-                      <td className="px-6 py-5 font-semibold text-gray-900">
-                        {note.title}
-                      </td>
-                      <td className="px-6 py-5 text-gray-600">
-                        {note.createdAt}
-                      </td>
-                      <td className="px-6 py-5 text-right">
-                        <button
-                          onClick={() => openDetails(note)}
-                          className="px-5 py-2 rounded-xl bg-cyan-900 text-white font-semibold shadow hover:bg-cyan-800 transition"
-                        >
-                          Details
-                        </button>
+                  {paginatedNotes.length === 0 ? (
+                    <tr>
+                      <td className="px-6 py-6 text-gray-600" colSpan={3}>
+                        No notes yet. Add your first note.
                       </td>
                     </tr>
-                  ))}
+                  ) : (
+                    paginatedNotes.map((note) => (
+                      <tr
+                        key={note.id}
+                        className="border-t hover:bg-gray-50 transition"
+                      >
+                        <td className="px-6 py-5 font-semibold text-gray-900">
+                          {note.title}
+                        </td>
+
+                        <td className="px-6 py-5 text-gray-700">
+                          {note.createdAt}
+                        </td>
+
+                        <td className="px-6 py-5">
+                          <div className="flex justify-end gap-2 flex-wrap">
+                            <button
+                              onClick={() => openDetailsModal(note)}
+                              className="px-4 py-2 rounded-xl bg-blue-600 text-white font-semibold hover:bg-blue-500 transition"
+                            >
+                              Details
+                            </button>
+
+                            <button
+                              onClick={() => openEditModal(note)}
+                              className="px-4 py-2 rounded-xl bg-cyan-900 text-white font-semibold hover:bg-cyan-800 transition"
+                            >
+                              Edit
+                            </button>
+
+                            <button
+                              onClick={() => deleteItem(note)}
+                              className="px-4 py-2 rounded-xl bg-red-600 text-white font-semibold hover:bg-red-500 transition"
+                            >
+                              Delete
+                            </button>
+                          </div>
+                        </td>
+                      </tr>
+                    ))
+                  )}
                 </tbody>
               </table>
             </div>
@@ -578,55 +875,338 @@ export default function Page() {
         </section>
       </main>
 
-      {/* DETAILS MODAL */}
+      {/* MODAL */}
       <Modal
         open={modalOpen}
-        onClose={closeModal}
-        title={selectedItem ? (selectedItem as any).title || (selectedItem as any).name : ""}
+        onClose={() => setModalOpen(false)}
+        title={
+          modalMode === "add"
+            ? "Add New Entry"
+            : modalMode === "edit"
+            ? "Edit Entry"
+            : "Entry Details"
+        }
       >
-        {selectedItem && (
-          <div className="space-y-4">
+        {/* DETAILS MODE */}
+        {modalMode === "details" && selectedItem && (
+          <div className="space-y-4 text-gray-800">
+            <p className="text-sm text-gray-500 font-semibold">
+              Type:{" "}
+              <span className="text-cyan-900 font-extrabold">
+                {selectedItem.type}
+              </span>
+            </p>
+
             {"status" in selectedItem && (
               <div className="flex items-center gap-3">
-                <span className="font-bold text-gray-800">Status:</span>
-                <StatusBadge status={(selectedItem as any).status} />
+                <span className="font-bold">Status:</span>
+                <StatusBadge status={selectedItem.status} />
               </div>
             )}
 
             {"priority" in selectedItem && (
               <div className="flex items-center gap-3">
-                <span className="font-bold text-gray-800">Priority:</span>
-                <PriorityBadge priority={(selectedItem as any).priority} />
+                <span className="font-bold">Priority:</span>
+                <PriorityBadge priority={selectedItem.priority} />
               </div>
             )}
 
             {"createdAt" in selectedItem && (
-              <p className="text-gray-700">
+              <p>
                 <span className="font-bold">Created:</span>{" "}
-                {(selectedItem as any).createdAt}
+                {selectedItem.createdAt}
+              </p>
+            )}
+
+            {"deadline" in selectedItem && (
+              <p>
+                <span className="font-bold">Deadline:</span>{" "}
+                {selectedItem.deadline || "—"}
+              </p>
+            )}
+
+            {"name" in selectedItem && (
+              <p>
+                <span className="font-bold">Client Name:</span>{" "}
+                {selectedItem.name}
               </p>
             )}
 
             {"project" in selectedItem && (
-              <p className="text-gray-700">
+              <p>
                 <span className="font-bold">Project:</span>{" "}
-                {(selectedItem as any).project}
+                {selectedItem.project}
               </p>
             )}
 
             {"country" in selectedItem && (
-              <p className="text-gray-700">
+              <p>
                 <span className="font-bold">Country:</span>{" "}
-                {(selectedItem as any).country}
+                {selectedItem.country}
               </p>
             )}
 
-            {"details" in selectedItem && (
-              <p className="text-gray-800 leading-relaxed">
-                <span className="font-bold text-gray-900">Details:</span>{" "}
-                {(selectedItem as any).details}
+            {"title" in selectedItem && (
+              <p>
+                <span className="font-bold">Title:</span>{" "}
+                {"title" in selectedItem ? selectedItem.title : ""}
               </p>
             )}
+
+            <div className="bg-gray-100 p-4 rounded-2xl">
+              <p className="font-bold text-gray-900 mb-2">Details</p>
+              <p className="leading-relaxed text-gray-800">
+                {selectedItem.details}
+              </p>
+            </div>
+
+            <div className="flex gap-3 flex-wrap pt-3">
+              <button
+                onClick={() => openEditModal(selectedItem)}
+                className="px-6 py-3 rounded-2xl bg-cyan-900 text-white font-bold shadow hover:bg-cyan-800 transition"
+              >
+                Edit
+              </button>
+
+              <button
+                onClick={() => deleteItem(selectedItem)}
+                className="px-6 py-3 rounded-2xl bg-red-600 text-white font-bold shadow hover:bg-red-500 transition"
+              >
+                Delete
+              </button>
+            </div>
+          </div>
+        )}
+
+        {/* ADD + EDIT MODE */}
+        {(modalMode === "add" || modalMode === "edit") && (
+          <div className="space-y-5">
+            {/* TYPE SELECTOR ONLY IN ADD */}
+            {modalMode === "add" && (
+              <div>
+                <label className="block text-sm font-bold text-gray-700 mb-2">
+                  What do you want to add?
+                </label>
+
+                <select
+                  value={selectedType}
+                  onChange={(e) => setSelectedType(e.target.value as SectionType)}
+                  className="w-full px-4 py-3 rounded-2xl border border-gray-300 outline-none focus:ring-2 focus:ring-cyan-700"
+                >
+                  <option value="Task">Task</option>
+                  <option value="Project">Project</option>
+                  <option value="Client">Client</option>
+                  <option value="Note">Note</option>
+                </select>
+              </div>
+            )}
+
+            {/* TASK/PROJECT FORM */}
+            {(selectedType === "Task" || selectedType === "Project") && (
+              <>
+                <div>
+                  <label className="block text-sm font-bold text-gray-700 mb-2">
+                    Title
+                  </label>
+                  <input
+                    value={formTitle}
+                    onChange={(e) => setFormTitle(e.target.value)}
+                    placeholder="Enter title..."
+                    className="w-full px-4 py-3 rounded-2xl border border-gray-300 outline-none focus:ring-2 focus:ring-cyan-700"
+                  />
+                </div>
+
+                <div className="grid md:grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-sm font-bold text-gray-700 mb-2">
+                      Status
+                    </label>
+                    <select
+                      value={formStatus}
+                      onChange={(e) => setFormStatus(e.target.value as StatusType)}
+                      className="w-full px-4 py-3 rounded-2xl border border-gray-300 outline-none focus:ring-2 focus:ring-cyan-700"
+                    >
+                      <option value="Pending">Pending</option>
+                      <option value="In Progress">In Progress</option>
+                      <option value="Completed">Completed</option>
+                      <option value="On Hold">On Hold</option>
+                    </select>
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-bold text-gray-700 mb-2">
+                      Priority
+                    </label>
+                    <select
+                      value={formPriority}
+                      onChange={(e) =>
+                        setFormPriority(e.target.value as "Low" | "Medium" | "High")
+                      }
+                      className="w-full px-4 py-3 rounded-2xl border border-gray-300 outline-none focus:ring-2 focus:ring-cyan-700"
+                    >
+                      <option value="Low">Low</option>
+                      <option value="Medium">Medium</option>
+                      <option value="High">High</option>
+                    </select>
+                  </div>
+                </div>
+
+                <div>
+                  <label className="block text-sm font-bold text-gray-700 mb-2">
+                    Deadline (Optional)
+                  </label>
+                  <input
+                    type="date"
+                    value={formDeadline}
+                    onChange={(e) => setFormDeadline(e.target.value)}
+                    className="w-full px-4 py-3 rounded-2xl border border-gray-300 outline-none focus:ring-2 focus:ring-cyan-700"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-bold text-gray-700 mb-2">
+                    Details
+                  </label>
+                  <textarea
+                    value={formDetails}
+                    onChange={(e) => setFormDetails(e.target.value)}
+                    placeholder="Write details..."
+                    rows={5}
+                    className="w-full px-4 py-3 rounded-2xl border border-gray-300 outline-none focus:ring-2 focus:ring-cyan-700 resize-none"
+                  />
+                </div>
+              </>
+            )}
+
+            {/* CLIENT FORM */}
+            {selectedType === "Client" && (
+              <>
+                <div>
+                  <label className="block text-sm font-bold text-gray-700 mb-2">
+                    Client Name
+                  </label>
+                  <input
+                    value={formClientName}
+                    onChange={(e) => setFormClientName(e.target.value)}
+                    placeholder="Enter client name..."
+                    className="w-full px-4 py-3 rounded-2xl border border-gray-300 outline-none focus:ring-2 focus:ring-cyan-700"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-bold text-gray-700 mb-2">
+                    Project / Service
+                  </label>
+                  <input
+                    value={formClientProject}
+                    onChange={(e) => setFormClientProject(e.target.value)}
+                    placeholder="What project are you doing for them?"
+                    className="w-full px-4 py-3 rounded-2xl border border-gray-300 outline-none focus:ring-2 focus:ring-cyan-700"
+                  />
+                </div>
+
+                <div className="grid md:grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-sm font-bold text-gray-700 mb-2">
+                      Country
+                    </label>
+                    <input
+                      value={formClientCountry}
+                      onChange={(e) => setFormClientCountry(e.target.value)}
+                      placeholder="Country..."
+                      className="w-full px-4 py-3 rounded-2xl border border-gray-300 outline-none focus:ring-2 focus:ring-cyan-700"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-bold text-gray-700 mb-2">
+                      Status
+                    </label>
+                    <select
+                      value={formStatus}
+                      onChange={(e) => setFormStatus(e.target.value as StatusType)}
+                      className="w-full px-4 py-3 rounded-2xl border border-gray-300 outline-none focus:ring-2 focus:ring-cyan-700"
+                    >
+                      <option value="Pending">Pending</option>
+                      <option value="In Progress">In Progress</option>
+                      <option value="Completed">Completed</option>
+                      <option value="On Hold">On Hold</option>
+                    </select>
+                  </div>
+                </div>
+
+                <div>
+                  <label className="block text-sm font-bold text-gray-700 mb-2">
+                    Deadline (Optional)
+                  </label>
+                  <input
+                    type="date"
+                    value={formDeadline}
+                    onChange={(e) => setFormDeadline(e.target.value)}
+                    className="w-full px-4 py-3 rounded-2xl border border-gray-300 outline-none focus:ring-2 focus:ring-cyan-700"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-bold text-gray-700 mb-2">
+                    Details
+                  </label>
+                  <textarea
+                    value={formDetails}
+                    onChange={(e) => setFormDetails(e.target.value)}
+                    placeholder="Write client details..."
+                    rows={5}
+                    className="w-full px-4 py-3 rounded-2xl border border-gray-300 outline-none focus:ring-2 focus:ring-cyan-700 resize-none"
+                  />
+                </div>
+              </>
+            )}
+
+            {/* NOTE FORM */}
+            {selectedType === "Note" && (
+              <>
+                <div>
+                  <label className="block text-sm font-bold text-gray-700 mb-2">
+                    Note Title
+                  </label>
+                  <input
+                    value={formTitle}
+                    onChange={(e) => setFormTitle(e.target.value)}
+                    placeholder="Enter note title..."
+                    className="w-full px-4 py-3 rounded-2xl border border-gray-300 outline-none focus:ring-2 focus:ring-cyan-700"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-bold text-gray-700 mb-2">
+                    Note Details
+                  </label>
+                  <textarea
+                    value={formDetails}
+                    onChange={(e) => setFormDetails(e.target.value)}
+                    placeholder="Write note..."
+                    rows={6}
+                    className="w-full px-4 py-3 rounded-2xl border border-gray-300 outline-none focus:ring-2 focus:ring-cyan-700 resize-none"
+                  />
+                </div>
+              </>
+            )}
+
+            <div className="pt-3 flex gap-3 flex-wrap">
+              <button
+                onClick={handleSave}
+                className="px-7 py-3 rounded-2xl bg-cyan-900 text-white font-extrabold shadow-lg hover:bg-cyan-800 transition"
+              >
+                {modalMode === "add" ? "Save" : "Update"}
+              </button>
+
+              <button
+                onClick={() => setModalOpen(false)}
+                className="px-7 py-3 rounded-2xl bg-gray-200 text-gray-900 font-extrabold shadow hover:bg-gray-300 transition"
+              >
+                Cancel
+              </button>
+            </div>
           </div>
         )}
       </Modal>
