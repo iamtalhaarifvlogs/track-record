@@ -5,7 +5,6 @@ import Header from "@/app/components/Header";
 import Footer from "@/app/components/Footer";
 
 type SectionType = "Task" | "Project" | "Client" | "Note";
-
 type StatusType = "Pending" | "In Progress" | "Completed" | "On Hold";
 
 type TaskProjectItem = {
@@ -54,15 +53,17 @@ function formatDate(date: Date) {
 function StatusBadge({ status }: { status: StatusType }) {
   const styles =
     status === "Completed"
-      ? "bg-green-100 text-green-800"
+      ? "bg-green-100 text-green-800 border-green-200"
       : status === "In Progress"
-      ? "bg-blue-100 text-blue-800"
+      ? "bg-blue-100 text-blue-800 border-blue-200"
       : status === "Pending"
-      ? "bg-yellow-100 text-yellow-800"
-      : "bg-gray-200 text-gray-800";
+      ? "bg-yellow-100 text-yellow-800 border-yellow-200"
+      : "bg-gray-100 text-gray-800 border-gray-200";
 
   return (
-    <span className={`px-3 py-1 rounded-full text-xs font-semibold ${styles}`}>
+    <span
+      className={`px-3 py-1 rounded-full text-xs font-semibold border ${styles}`}
+    >
       {status}
     </span>
   );
@@ -75,13 +76,15 @@ function PriorityBadge({
 }) {
   const styles =
     priority === "High"
-      ? "bg-red-100 text-red-800"
+      ? "bg-red-100 text-red-800 border-red-200"
       : priority === "Medium"
-      ? "bg-orange-100 text-orange-800"
-      : "bg-emerald-100 text-emerald-800";
+      ? "bg-orange-100 text-orange-800 border-orange-200"
+      : "bg-emerald-100 text-emerald-800 border-emerald-200";
 
   return (
-    <span className={`px-3 py-1 rounded-full text-xs font-semibold ${styles}`}>
+    <span
+      className={`px-3 py-1 rounded-full text-xs font-semibold border ${styles}`}
+    >
       {priority}
     </span>
   );
@@ -101,9 +104,10 @@ function Modal({
   if (!open) return null;
 
   return (
-    <div className="fixed inset-0 bg-black/60 flex items-center justify-center px-4 z-50">
-      <div className="bg-white w-full max-w-3xl rounded-3xl shadow-2xl overflow-hidden">
-        <div className="flex items-center justify-between px-6 py-5 bg-gradient-to-r from-cyan-900 via-blue-900 to-cyan-800 text-white">
+    <div className="fixed inset-0 z-50 bg-black/60 px-4 py-8 overflow-y-auto flex justify-center items-start">
+      <div className="w-full max-w-3xl bg-white rounded-3xl shadow-2xl overflow-hidden animate-fadeIn">
+        {/* HEADER */}
+        <div className="sticky top-0 z-10 flex items-center justify-between px-6 py-5 bg-gradient-to-r from-cyan-900 via-blue-900 to-cyan-800 text-white">
           <h3 className="text-lg md:text-xl font-extrabold">{title}</h3>
 
           <button
@@ -114,7 +118,8 @@ function Modal({
           </button>
         </div>
 
-        <div className="p-6">{children}</div>
+        {/* BODY */}
+        <div className="p-6 max-h-[75vh] overflow-y-auto">{children}</div>
       </div>
     </div>
   );
@@ -163,7 +168,7 @@ export default function Page() {
   const [clients, setClients] = useState<ClientItem[]>([]);
   const [notes, setNotes] = useState<NoteItem[]>([]);
 
-  // pagination states
+  // Pagination
   const [taskPage, setTaskPage] = useState(1);
   const [projectPage, setProjectPage] = useState(1);
   const [clientPage, setClientPage] = useState(1);
@@ -171,13 +176,13 @@ export default function Page() {
 
   const itemsPerPage = 5;
 
-  // modal states
+  // Modal States
   const [modalOpen, setModalOpen] = useState(false);
   const [modalMode, setModalMode] = useState<"add" | "edit" | "details">("add");
   const [selectedType, setSelectedType] = useState<SectionType>("Task");
   const [selectedItem, setSelectedItem] = useState<AnyItem | null>(null);
 
-  // form states
+  // Form States
   const [formTitle, setFormTitle] = useState("");
   const [formDetails, setFormDetails] = useState("");
   const [formStatus, setFormStatus] = useState<StatusType>("Pending");
@@ -208,12 +213,7 @@ export default function Page() {
   useEffect(() => {
     localStorage.setItem(
       STORAGE_KEY,
-      JSON.stringify({
-        tasks,
-        projects,
-        clients,
-        notes,
-      })
+      JSON.stringify({ tasks, projects, clients, notes })
     );
   }, [tasks, projects, clients, notes]);
 
@@ -244,6 +244,7 @@ export default function Page() {
   }
 
   function openEditModal(item: AnyItem) {
+    resetForm();
     setSelectedItem(item);
     setModalMode("edit");
     setModalOpen(true);
@@ -281,19 +282,16 @@ export default function Page() {
 
     if (!confirmDelete) return;
 
-    if (item.type === "Task") {
-      setTasks((prev) => prev.filter((x) => x.id !== item.id));
-    } else if (item.type === "Project") {
+    if (item.type === "Task") setTasks((prev) => prev.filter((x) => x.id !== item.id));
+    if (item.type === "Project")
       setProjects((prev) => prev.filter((x) => x.id !== item.id));
-    } else if (item.type === "Client") {
+    if (item.type === "Client")
       setClients((prev) => prev.filter((x) => x.id !== item.id));
-    } else if (item.type === "Note") {
-      setNotes((prev) => prev.filter((x) => x.id !== item.id));
-    }
+    if (item.type === "Note") setNotes((prev) => prev.filter((x) => x.id !== item.id));
   }
 
   function handleSave() {
-    // ADD MODE
+    // ADD
     if (modalMode === "add") {
       if (selectedType === "Task" || selectedType === "Project") {
         if (!formTitle.trim()) return alert("Title is required.");
@@ -311,8 +309,7 @@ export default function Page() {
         };
 
         if (selectedType === "Task") setTasks((prev) => [newItem, ...prev]);
-        if (selectedType === "Project")
-          setProjects((prev) => [newItem, ...prev]);
+        if (selectedType === "Project") setProjects((prev) => [newItem, ...prev]);
 
         setModalOpen(false);
         resetForm();
@@ -362,7 +359,7 @@ export default function Page() {
       }
     }
 
-    // EDIT MODE
+    // EDIT
     if (modalMode === "edit" && selectedItem) {
       if (selectedItem.type === "Task" || selectedItem.type === "Project") {
         if (!formTitle.trim()) return alert("Title is required.");
@@ -382,9 +379,7 @@ export default function Page() {
         }
 
         if (selectedItem.type === "Project") {
-          setProjects((prev) =>
-            prev.map((x) => (x.id === updated.id ? updated : x))
-          );
+          setProjects((prev) => prev.map((x) => (x.id === updated.id ? updated : x)));
         }
 
         setModalOpen(false);
@@ -409,6 +404,7 @@ export default function Page() {
         };
 
         setClients((prev) => prev.map((x) => (x.id === updated.id ? updated : x)));
+
         setModalOpen(false);
         resetForm();
         return;
@@ -425,6 +421,7 @@ export default function Page() {
         };
 
         setNotes((prev) => prev.map((x) => (x.id === updated.id ? updated : x)));
+
         setModalOpen(false);
         resetForm();
         return;
@@ -432,57 +429,43 @@ export default function Page() {
     }
   }
 
-  // pagination helper
+  // Pagination helper
   function paginate<T>(items: T[], page: number) {
     const start = (page - 1) * itemsPerPage;
     return items.slice(start, start + itemsPerPage);
   }
 
-  const paginatedTasks = useMemo(
-    () => paginate(tasks, taskPage),
-    [tasks, taskPage]
-  );
-
+  const paginatedTasks = useMemo(() => paginate(tasks, taskPage), [tasks, taskPage]);
   const paginatedProjects = useMemo(
     () => paginate(projects, projectPage),
     [projects, projectPage]
   );
-
   const paginatedClients = useMemo(
     () => paginate(clients, clientPage),
     [clients, clientPage]
   );
-
-  const paginatedNotes = useMemo(
-    () => paginate(notes, notePage),
-    [notes, notePage]
-  );
+  const paginatedNotes = useMemo(() => paginate(notes, notePage), [notes, notePage]);
 
   const totalTaskPages = Math.max(1, Math.ceil(tasks.length / itemsPerPage));
-  const totalProjectPages = Math.max(
-    1,
-    Math.ceil(projects.length / itemsPerPage)
-  );
-  const totalClientPages = Math.max(
-    1,
-    Math.ceil(clients.length / itemsPerPage)
-  );
+  const totalProjectPages = Math.max(1, Math.ceil(projects.length / itemsPerPage));
+  const totalClientPages = Math.max(1, Math.ceil(clients.length / itemsPerPage));
   const totalNotePages = Math.max(1, Math.ceil(notes.length / itemsPerPage));
 
   return (
     <>
       <Header />
 
-      <main className="container mx-auto px-6 py-12 max-w-6xl space-y-16">
+      <main className="container mx-auto px-6 py-12 max-w-6xl space-y-20">
         {/* HERO */}
         <section className="bg-white rounded-3xl shadow-xl border overflow-hidden">
           <div className="bg-gradient-to-r from-cyan-900 via-blue-900 to-cyan-800 px-8 py-10 text-white">
             <h1 className="text-3xl md:text-5xl font-extrabold">
               Talha&apos;s Diary Dashboard
             </h1>
+
             <p className="text-cyan-100 mt-3 max-w-3xl leading-relaxed">
-              Your personal tracker for tasks, clients, projects, and notes.
-              Everything stays saved on your device automatically.
+              Track your tasks, clients, projects and notes. Everything saves automatically
+              on your device.
             </p>
 
             <div className="mt-7">
@@ -497,9 +480,8 @@ export default function Page() {
 
           <div className="px-8 py-6 text-gray-700 text-sm md:text-base">
             <p>
-              <span className="font-bold text-cyan-900">Quick Tip:</span> Use the
-              navigation menu to scroll instantly between Tasks, Projects,
-              Clients and Notes.
+              <span className="font-bold text-cyan-900">Tip:</span> Use the header menu
+              to jump between sections instantly.
             </p>
           </div>
         </section>
@@ -535,10 +517,7 @@ export default function Page() {
                     </tr>
                   ) : (
                     paginatedTasks.map((task) => (
-                      <tr
-                        key={task.id}
-                        className="border-t hover:bg-gray-50 transition"
-                      >
+                      <tr key={task.id} className="border-t hover:bg-gray-50 transition">
                         <td className="px-6 py-5 font-semibold text-gray-900">
                           {task.title}
                         </td>
@@ -591,9 +570,7 @@ export default function Page() {
                 currentPage={taskPage}
                 totalPages={totalTaskPages}
                 onPrev={() => setTaskPage((p) => Math.max(1, p - 1))}
-                onNext={() =>
-                  setTaskPage((p) => Math.min(totalTaskPages, p + 1))
-                }
+                onNext={() => setTaskPage((p) => Math.min(totalTaskPages, p + 1))}
               />
             </div>
           </div>
@@ -866,19 +843,18 @@ export default function Page() {
                 currentPage={notePage}
                 totalPages={totalNotePages}
                 onPrev={() => setNotePage((p) => Math.max(1, p - 1))}
-                onNext={() =>
-                  setNotePage((p) => Math.min(totalNotePages, p + 1))
-                }
+                onNext={() => setNotePage((p) => Math.min(totalNotePages, p + 1))}
               />
             </div>
           </div>
         </section>
       </main>
 
+      <Footer />
+
       {/* MODAL */}
       <Modal
         open={modalOpen}
-        onClose={() => setModalOpen(false)}
         title={
           modalMode === "add"
             ? "Add New Entry"
@@ -886,94 +862,75 @@ export default function Page() {
             ? "Edit Entry"
             : "Entry Details"
         }
+        onClose={() => setModalOpen(false)}
       >
         {/* DETAILS MODE */}
         {modalMode === "details" && selectedItem && (
           <div className="space-y-4 text-gray-800">
-            <p className="text-sm text-gray-500 font-semibold">
+            <p className="text-sm font-semibold text-gray-600">
               Type:{" "}
-              <span className="text-cyan-900 font-extrabold">
-                {selectedItem.type}
-              </span>
+              <span className="text-cyan-900 font-bold">{selectedItem.type}</span>
             </p>
 
             {"status" in selectedItem && (
-              <div className="flex items-center gap-3">
-                <span className="font-bold">Status:</span>
+              <div className="flex gap-2 items-center">
+                <span className="text-sm font-semibold text-gray-600">Status:</span>
                 <StatusBadge status={selectedItem.status} />
               </div>
             )}
 
             {"priority" in selectedItem && (
-              <div className="flex items-center gap-3">
-                <span className="font-bold">Priority:</span>
+              <div className="flex gap-2 items-center">
+                <span className="text-sm font-semibold text-gray-600">
+                  Priority:
+                </span>
                 <PriorityBadge priority={selectedItem.priority} />
               </div>
             )}
 
-            {"createdAt" in selectedItem && (
-              <p>
-                <span className="font-bold">Created:</span>{" "}
-                {selectedItem.createdAt}
+            {"deadline" in selectedItem && (
+              <p className="text-sm font-semibold text-gray-600">
+                Deadline:{" "}
+                <span className="text-gray-900 font-bold">
+                  {selectedItem.deadline || "—"}
+                </span>
               </p>
             )}
 
-            {"deadline" in selectedItem && (
-              <p>
-                <span className="font-bold">Deadline:</span>{" "}
-                {selectedItem.deadline || "—"}
+            {"createdAt" in selectedItem && (
+              <p className="text-sm font-semibold text-gray-600">
+                Created At:{" "}
+                <span className="text-gray-900 font-bold">
+                  {selectedItem.createdAt}
+                </span>
               </p>
             )}
 
             {"name" in selectedItem && (
-              <p>
-                <span className="font-bold">Client Name:</span>{" "}
-                {selectedItem.name}
+              <p className="text-sm font-semibold text-gray-600">
+                Client Name:{" "}
+                <span className="text-gray-900 font-bold">{selectedItem.name}</span>
               </p>
             )}
 
-            {"project" in selectedItem && (
-              <p>
-                <span className="font-bold">Project:</span>{" "}
-                {selectedItem.project}
+            {"project" in selectedItem && selectedItem.type === "Client" && (
+              <p className="text-sm font-semibold text-gray-600">
+                Project:{" "}
+                <span className="text-gray-900 font-bold">{selectedItem.project}</span>
               </p>
             )}
 
             {"country" in selectedItem && (
-              <p>
-                <span className="font-bold">Country:</span>{" "}
-                {selectedItem.country}
+              <p className="text-sm font-semibold text-gray-600">
+                Country:{" "}
+                <span className="text-gray-900 font-bold">
+                  {selectedItem.country}
+                </span>
               </p>
             )}
 
-            {"title" in selectedItem && (
-              <p>
-                <span className="font-bold">Title:</span>{" "}
-                {"title" in selectedItem ? selectedItem.title : ""}
-              </p>
-            )}
-
-            <div className="bg-gray-100 p-4 rounded-2xl">
-              <p className="font-bold text-gray-900 mb-2">Details</p>
-              <p className="leading-relaxed text-gray-800">
-                {selectedItem.details}
-              </p>
-            </div>
-
-            <div className="flex gap-3 flex-wrap pt-3">
-              <button
-                onClick={() => openEditModal(selectedItem)}
-                className="px-6 py-3 rounded-2xl bg-cyan-900 text-white font-bold shadow hover:bg-cyan-800 transition"
-              >
-                Edit
-              </button>
-
-              <button
-                onClick={() => deleteItem(selectedItem)}
-                className="px-6 py-3 rounded-2xl bg-red-600 text-white font-bold shadow hover:bg-red-500 transition"
-              >
-                Delete
-              </button>
+            <div className="bg-gray-50 border rounded-2xl p-5 leading-relaxed text-gray-800 whitespace-pre-wrap">
+              {selectedItem.details}
             </div>
           </div>
         )}
@@ -981,17 +938,16 @@ export default function Page() {
         {/* ADD + EDIT MODE */}
         {(modalMode === "add" || modalMode === "edit") && (
           <div className="space-y-5">
-            {/* TYPE SELECTOR ONLY IN ADD */}
+            {/* TYPE SELECT */}
             {modalMode === "add" && (
               <div>
-                <label className="block text-sm font-bold text-gray-700 mb-2">
-                  What do you want to add?
+                <label className="block font-bold text-gray-700 mb-2">
+                  Select Type
                 </label>
-
                 <select
                   value={selectedType}
                   onChange={(e) => setSelectedType(e.target.value as SectionType)}
-                  className="w-full px-4 py-3 rounded-2xl border border-gray-300 outline-none focus:ring-2 focus:ring-cyan-700"
+                  className="w-full border rounded-2xl px-4 py-3 outline-none focus:ring-2 focus:ring-cyan-700"
                 >
                   <option value="Task">Task</option>
                   <option value="Project">Project</option>
@@ -1001,30 +957,30 @@ export default function Page() {
               </div>
             )}
 
-            {/* TASK/PROJECT FORM */}
+            {/* TASK / PROJECT */}
             {(selectedType === "Task" || selectedType === "Project") && (
               <>
                 <div>
-                  <label className="block text-sm font-bold text-gray-700 mb-2">
+                  <label className="block font-bold text-gray-700 mb-2">
                     Title
                   </label>
                   <input
                     value={formTitle}
                     onChange={(e) => setFormTitle(e.target.value)}
+                    className="w-full border rounded-2xl px-4 py-3 outline-none focus:ring-2 focus:ring-cyan-700"
                     placeholder="Enter title..."
-                    className="w-full px-4 py-3 rounded-2xl border border-gray-300 outline-none focus:ring-2 focus:ring-cyan-700"
                   />
                 </div>
 
                 <div className="grid md:grid-cols-2 gap-4">
                   <div>
-                    <label className="block text-sm font-bold text-gray-700 mb-2">
+                    <label className="block font-bold text-gray-700 mb-2">
                       Status
                     </label>
                     <select
                       value={formStatus}
                       onChange={(e) => setFormStatus(e.target.value as StatusType)}
-                      className="w-full px-4 py-3 rounded-2xl border border-gray-300 outline-none focus:ring-2 focus:ring-cyan-700"
+                      className="w-full border rounded-2xl px-4 py-3 outline-none focus:ring-2 focus:ring-cyan-700"
                     >
                       <option value="Pending">Pending</option>
                       <option value="In Progress">In Progress</option>
@@ -1034,7 +990,7 @@ export default function Page() {
                   </div>
 
                   <div>
-                    <label className="block text-sm font-bold text-gray-700 mb-2">
+                    <label className="block font-bold text-gray-700 mb-2">
                       Priority
                     </label>
                     <select
@@ -1042,7 +998,7 @@ export default function Page() {
                       onChange={(e) =>
                         setFormPriority(e.target.value as "Low" | "Medium" | "High")
                       }
-                      className="w-full px-4 py-3 rounded-2xl border border-gray-300 outline-none focus:ring-2 focus:ring-cyan-700"
+                      className="w-full border rounded-2xl px-4 py-3 outline-none focus:ring-2 focus:ring-cyan-700"
                     >
                       <option value="Low">Low</option>
                       <option value="Medium">Medium</option>
@@ -1052,166 +1008,150 @@ export default function Page() {
                 </div>
 
                 <div>
-                  <label className="block text-sm font-bold text-gray-700 mb-2">
-                    Deadline (Optional)
+                  <label className="block font-bold text-gray-700 mb-2">
+                    Deadline (optional)
                   </label>
                   <input
                     type="date"
                     value={formDeadline}
                     onChange={(e) => setFormDeadline(e.target.value)}
-                    className="w-full px-4 py-3 rounded-2xl border border-gray-300 outline-none focus:ring-2 focus:ring-cyan-700"
+                    className="w-full border rounded-2xl px-4 py-3 outline-none focus:ring-2 focus:ring-cyan-700"
                   />
                 </div>
 
                 <div>
-                  <label className="block text-sm font-bold text-gray-700 mb-2">
+                  <label className="block font-bold text-gray-700 mb-2">
                     Details
                   </label>
                   <textarea
                     value={formDetails}
                     onChange={(e) => setFormDetails(e.target.value)}
+                    className="w-full border rounded-2xl px-4 py-3 min-h-[150px] outline-none focus:ring-2 focus:ring-cyan-700"
                     placeholder="Write details..."
-                    rows={5}
-                    className="w-full px-4 py-3 rounded-2xl border border-gray-300 outline-none focus:ring-2 focus:ring-cyan-700 resize-none"
                   />
                 </div>
               </>
             )}
 
-            {/* CLIENT FORM */}
+            {/* CLIENT */}
             {selectedType === "Client" && (
               <>
                 <div>
-                  <label className="block text-sm font-bold text-gray-700 mb-2">
+                  <label className="block font-bold text-gray-700 mb-2">
                     Client Name
                   </label>
                   <input
                     value={formClientName}
                     onChange={(e) => setFormClientName(e.target.value)}
+                    className="w-full border rounded-2xl px-4 py-3 outline-none focus:ring-2 focus:ring-cyan-700"
                     placeholder="Enter client name..."
-                    className="w-full px-4 py-3 rounded-2xl border border-gray-300 outline-none focus:ring-2 focus:ring-cyan-700"
                   />
                 </div>
 
                 <div>
-                  <label className="block text-sm font-bold text-gray-700 mb-2">
-                    Project / Service
+                  <label className="block font-bold text-gray-700 mb-2">
+                    Project
                   </label>
                   <input
                     value={formClientProject}
                     onChange={(e) => setFormClientProject(e.target.value)}
-                    placeholder="What project are you doing for them?"
-                    className="w-full px-4 py-3 rounded-2xl border border-gray-300 outline-none focus:ring-2 focus:ring-cyan-700"
+                    className="w-full border rounded-2xl px-4 py-3 outline-none focus:ring-2 focus:ring-cyan-700"
+                    placeholder="Enter project name..."
                   />
                 </div>
 
-                <div className="grid md:grid-cols-2 gap-4">
-                  <div>
-                    <label className="block text-sm font-bold text-gray-700 mb-2">
-                      Country
-                    </label>
-                    <input
-                      value={formClientCountry}
-                      onChange={(e) => setFormClientCountry(e.target.value)}
-                      placeholder="Country..."
-                      className="w-full px-4 py-3 rounded-2xl border border-gray-300 outline-none focus:ring-2 focus:ring-cyan-700"
-                    />
-                  </div>
-
-                  <div>
-                    <label className="block text-sm font-bold text-gray-700 mb-2">
-                      Status
-                    </label>
-                    <select
-                      value={formStatus}
-                      onChange={(e) => setFormStatus(e.target.value as StatusType)}
-                      className="w-full px-4 py-3 rounded-2xl border border-gray-300 outline-none focus:ring-2 focus:ring-cyan-700"
-                    >
-                      <option value="Pending">Pending</option>
-                      <option value="In Progress">In Progress</option>
-                      <option value="Completed">Completed</option>
-                      <option value="On Hold">On Hold</option>
-                    </select>
-                  </div>
+                <div>
+                  <label className="block font-bold text-gray-700 mb-2">
+                    Country
+                  </label>
+                  <input
+                    value={formClientCountry}
+                    onChange={(e) => setFormClientCountry(e.target.value)}
+                    className="w-full border rounded-2xl px-4 py-3 outline-none focus:ring-2 focus:ring-cyan-700"
+                    placeholder="Enter country..."
+                  />
                 </div>
 
                 <div>
-                  <label className="block text-sm font-bold text-gray-700 mb-2">
-                    Deadline (Optional)
+                  <label className="block font-bold text-gray-700 mb-2">
+                    Status
+                  </label>
+                  <select
+                    value={formStatus}
+                    onChange={(e) => setFormStatus(e.target.value as StatusType)}
+                    className="w-full border rounded-2xl px-4 py-3 outline-none focus:ring-2 focus:ring-cyan-700"
+                  >
+                    <option value="Pending">Pending</option>
+                    <option value="In Progress">In Progress</option>
+                    <option value="Completed">Completed</option>
+                    <option value="On Hold">On Hold</option>
+                  </select>
+                </div>
+
+                <div>
+                  <label className="block font-bold text-gray-700 mb-2">
+                    Deadline (optional)
                   </label>
                   <input
                     type="date"
                     value={formDeadline}
                     onChange={(e) => setFormDeadline(e.target.value)}
-                    className="w-full px-4 py-3 rounded-2xl border border-gray-300 outline-none focus:ring-2 focus:ring-cyan-700"
+                    className="w-full border rounded-2xl px-4 py-3 outline-none focus:ring-2 focus:ring-cyan-700"
                   />
                 </div>
 
                 <div>
-                  <label className="block text-sm font-bold text-gray-700 mb-2">
+                  <label className="block font-bold text-gray-700 mb-2">
                     Details
                   </label>
                   <textarea
                     value={formDetails}
                     onChange={(e) => setFormDetails(e.target.value)}
-                    placeholder="Write client details..."
-                    rows={5}
-                    className="w-full px-4 py-3 rounded-2xl border border-gray-300 outline-none focus:ring-2 focus:ring-cyan-700 resize-none"
+                    className="w-full border rounded-2xl px-4 py-3 min-h-[150px] outline-none focus:ring-2 focus:ring-cyan-700"
+                    placeholder="Write details..."
                   />
                 </div>
               </>
             )}
 
-            {/* NOTE FORM */}
+            {/* NOTE */}
             {selectedType === "Note" && (
               <>
                 <div>
-                  <label className="block text-sm font-bold text-gray-700 mb-2">
+                  <label className="block font-bold text-gray-700 mb-2">
                     Note Title
                   </label>
                   <input
                     value={formTitle}
                     onChange={(e) => setFormTitle(e.target.value)}
+                    className="w-full border rounded-2xl px-4 py-3 outline-none focus:ring-2 focus:ring-cyan-700"
                     placeholder="Enter note title..."
-                    className="w-full px-4 py-3 rounded-2xl border border-gray-300 outline-none focus:ring-2 focus:ring-cyan-700"
                   />
                 </div>
 
                 <div>
-                  <label className="block text-sm font-bold text-gray-700 mb-2">
-                    Note Details
+                  <label className="block font-bold text-gray-700 mb-2">
+                    Details
                   </label>
                   <textarea
                     value={formDetails}
                     onChange={(e) => setFormDetails(e.target.value)}
+                    className="w-full border rounded-2xl px-4 py-3 min-h-[180px] outline-none focus:ring-2 focus:ring-cyan-700"
                     placeholder="Write note..."
-                    rows={6}
-                    className="w-full px-4 py-3 rounded-2xl border border-gray-300 outline-none focus:ring-2 focus:ring-cyan-700 resize-none"
                   />
                 </div>
               </>
             )}
 
-            <div className="pt-3 flex gap-3 flex-wrap">
-              <button
-                onClick={handleSave}
-                className="px-7 py-3 rounded-2xl bg-cyan-900 text-white font-extrabold shadow-lg hover:bg-cyan-800 transition"
-              >
-                {modalMode === "add" ? "Save" : "Update"}
-              </button>
-
-              <button
-                onClick={() => setModalOpen(false)}
-                className="px-7 py-3 rounded-2xl bg-gray-200 text-gray-900 font-extrabold shadow hover:bg-gray-300 transition"
-              >
-                Cancel
-              </button>
-            </div>
+            <button
+              onClick={handleSave}
+              className="w-full bg-gradient-to-r from-cyan-900 via-blue-900 to-cyan-800 text-white font-extrabold py-4 rounded-2xl shadow-xl hover:opacity-95 transition"
+            >
+              {modalMode === "add" ? "Save Entry" : "Update Entry"}
+            </button>
           </div>
         )}
       </Modal>
-
-      <Footer />
     </>
   );
 }
