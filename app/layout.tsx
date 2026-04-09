@@ -32,16 +32,13 @@ export default function RootLayout({
     >
       <body className="min-h-screen flex flex-col bg-gray-50 text-gray-900 selection:bg-cyan-200 selection:text-cyan-900">
         
-        {/* Dialogflow Messenger Script */}
         <Script
           src="https://www.gstatic.com/dialogflow-console/fast/messenger/bootstrap.js?v=1"
           strategy="afterInteractive"
         />
 
-        {/* Website Content */}
         <div className="flex-1 flex flex-col">{children}</div>
 
-        {/* Dialogflow Messenger Widget */}
         <df-messenger
           intent="WELCOME"
           chat-title="Newthing2026"
